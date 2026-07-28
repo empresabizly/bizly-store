@@ -1,0 +1,23 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Cualquiera puede LEER negocios y productos (para la tienda pública).
+    // Solo el dueño autenticado puede crear/editar/borrar su propio negocio.
+    match /businesses/{businessId} {
+      allow read: if true;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.ownerId;
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.ownerId;
+    }
+
+    // Productos: lectura pública, escritura solo si el dueño del negocio
+    // relacionado coincide con el usuario autenticado.
+    match /products/{productId} {
+      allow read: if true;
+      allow create, update: if request.auth != null &&
+        get(/databases/$(database)/documents/businesses/$(request.resource.data.businessId)).data.ownerId == request.auth.uid;
+      allow delete: if request.auth != null &&
+        get(/databases/$(database)/documents/businesses/$(resource.data.businessId)).data.ownerId == request.auth.uid;
+    }
+  }
+}
