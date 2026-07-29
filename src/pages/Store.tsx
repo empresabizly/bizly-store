@@ -276,34 +276,42 @@ export default function Store() {
         </select>
       </div>
 
-      {/* Categorías */}
+      {/* Categorías visuales */}
       {categories.length > 1 && (
-        <div className="max-w-5xl mx-auto px-6 pt-4 flex gap-2 overflow-x-auto no-scrollbar">
-          <button
-            onClick={() => setActiveCategory(null)}
-            className="shrink-0 px-4 py-1.5 rounded-full text-xs font-medium border"
-            style={
-              !activeCategory
-                ? { backgroundColor: accent, color: 'white', borderColor: accent }
-                : { color: 'rgba(0,0,0,0.5)', borderColor: 'rgba(0,0,0,0.1)' }
-            }
-          >
-            Todo
-          </button>
-          {categories.map((cat) => (
+        <div className="max-w-5xl mx-auto px-6 pt-6">
+          <p className="text-xs text-black/40 mb-2 font-medium">Explora por categoría</p>
+          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
             <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
-              className="shrink-0 px-4 py-1.5 rounded-full text-xs font-medium border"
+              onClick={() => setActiveCategory(null)}
+              className="shrink-0 flex flex-col items-center justify-center w-20 h-20 rounded-2xl border text-xs font-medium"
               style={
-                activeCategory === cat
+                !activeCategory
                   ? { backgroundColor: accent, color: 'white', borderColor: accent }
-                  : { color: 'rgba(0,0,0,0.5)', borderColor: 'rgba(0,0,0,0.1)' }
+                  : { color: 'rgba(0,0,0,0.6)', borderColor: 'rgba(0,0,0,0.1)', backgroundColor: 'white' }
               }
             >
-              {cat}
+              <span className="text-lg">🗂️</span>
+              Todo
             </button>
-          ))}
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className="shrink-0 flex flex-col items-center justify-center w-20 h-20 rounded-2xl border text-xs font-medium px-1 text-center"
+                style={
+                  activeCategory === cat
+                    ? { backgroundColor: accent, color: 'white', borderColor: accent }
+                    : { color: 'rgba(0,0,0,0.6)', borderColor: 'rgba(0,0,0,0.1)', backgroundColor: 'white' }
+                }
+              >
+                <span className="text-lg">🏷️</span>
+                <span className="truncate w-full">{cat}</span>
+                <span className="text-[10px] opacity-70">
+                  {products.filter((p) => p.category === cat).length}
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
       )}
 

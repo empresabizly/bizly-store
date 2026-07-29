@@ -138,6 +138,20 @@ También incluye:
 - **Color de marca personalizable** desde Configuración — se aplica a botones y acentos de la tienda
 - **Horario de atención y redes sociales** (Instagram/Facebook) opcionales, configurables por el negocio
 
+## Evolución a plataforma SaaS profesional
+
+- **Dashboard con Resumen**: nueva pantalla de entrada (`/dashboard`) con métricas
+  (pedidos nuevos, ventas completadas, productos activos, sin stock), accesos
+  rápidos y pedidos recientes. La lista de productos se movió a `/dashboard/productos`.
+- **Productos más profesional**: filtros por estado (disponible/agotado) y
+  categoría, cambio rápido de disponibilidad sin abrir el formulario, campo de
+  inventario opcional.
+- **Configuración como constructor visual**: ahora tiene sub-pestañas —
+  Identidad (logo/portada), Información (datos del negocio), Diseño (color de
+  marca con vista previa), y Plan.
+- **Tienda pública**: categorías ahora se ven como tarjetas visuales con conteo
+  de productos, no solo pestañas de texto.
+
 ## Qué incluye este MVP
 
 - Registro / login (Firebase Auth)

@@ -33,6 +33,7 @@ export interface Product {
   category: string;
   brand?: string;
   model?: string;
+  stock?: number;
   badge?: ProductBadge;
   imageUrl?: string;
   imageCloudinaryId?: string;

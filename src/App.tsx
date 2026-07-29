@@ -6,6 +6,7 @@ import Register from './pages/Register';
 import Login from './pages/Login';
 import Onboarding from './pages/Onboarding';
 import Dashboard from './pages/Dashboard';
+import DashboardHome from './pages/DashboardHome';
 import Settings from './pages/Settings';
 import Orders from './pages/Orders';
 import ProductForm from './pages/ProductForm';
@@ -31,6 +32,14 @@ export default function App() {
           />
           <Route
             path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <DashboardHome />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/productos"
             element={
               <ProtectedRoute>
                 <Dashboard />

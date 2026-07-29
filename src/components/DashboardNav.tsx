@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom';
 
 interface DashboardNavProps {
-  active: 'productos' | 'pedidos' | 'configuracion';
+  active: 'resumen' | 'productos' | 'pedidos' | 'configuracion';
 }
 
 const TABS: { key: DashboardNavProps['active']; label: string; to: string }[] = [
-  { key: 'productos', label: '📦 Productos', to: '/dashboard' },
+  { key: 'resumen', label: '📊 Resumen', to: '/dashboard' },
+  { key: 'productos', label: '📦 Productos', to: '/dashboard/productos' },
   { key: 'pedidos', label: '🛒 Pedidos', to: '/dashboard/pedidos' },
   { key: 'configuracion', label: '⚙️ Configuración', to: '/dashboard/configuracion' },
 ];

@@ -20,6 +20,7 @@ export default function ProductForm() {
   const [brand, setBrand] = useState('');
   const [model, setModel] = useState('');
   const [badge, setBadge] = useState<ProductBadge | ''>('');
+  const [stock, setStock] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [imageCloudinaryId, setImageCloudinaryId] = useState('');
   const [imageCreatedAt, setImageCreatedAt] = useState<number | undefined>(undefined);
@@ -40,6 +41,7 @@ export default function ProductForm() {
         setBrand(p.brand || '');
         setModel(p.model || '');
         setBadge(p.badge || '');
+        setStock(p.stock !== undefined ? String(p.stock) : '');
         setImageUrl(p.imageUrl || '');
         setImageCloudinaryId(p.imageCloudinaryId || '');
         setImageCreatedAt(p.imageCreatedAt);
@@ -81,6 +83,7 @@ export default function ProductForm() {
       ...(brand ? { brand } : {}),
       ...(model ? { model } : {}),
       ...(badge ? { badge } : {}),
+      ...(stock !== '' ? { stock: Number(stock) } : {}),
       ...(imageUrl ? { imageUrl } : {}),
       ...(imageCloudinaryId ? { imageCloudinaryId } : {}),
       ...(imageCreatedAt ? { imageCreatedAt } : {}),
@@ -88,13 +91,13 @@ export default function ProductForm() {
 
     await setDoc(doc(db, 'products', id), product);
     setLoading(false);
-    navigate('/dashboard');
+    navigate('/dashboard/productos');
   }
 
   return (
     <div className="min-h-screen bg-bizly-cream flex items-center justify-center px-6 py-12">
       <div className="w-full max-w-lg bg-white rounded-2xl shadow-sm p-8">
-        <Link to="/dashboard" className="text-sm text-black/40">
+        <Link to="/dashboard/productos" className="text-sm text-black/40">
           ← Volver
         </Link>
         <h1 className="font-heading text-xl font-bold mt-2">
@@ -137,14 +140,26 @@ export default function ProductForm() {
               />
             </div>
             <div>
-              <label className="text-sm font-medium">Categoría</label>
+              <label className="text-sm font-medium">Inventario (opcional)</label>
               <input
+                type="number"
+                min="0"
                 className="w-full mt-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-bizly-green"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                placeholder="Ej. Ropa"
+                value={stock}
+                onChange={(e) => setStock(e.target.value)}
+                placeholder="Sin límite"
               />
             </div>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium">Categoría</label>
+            <input
+              className="w-full mt-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-bizly-green"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              placeholder="Ej. Ropa"
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
