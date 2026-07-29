@@ -152,6 +152,19 @@ También incluye:
 - **Tienda pública**: categorías ahora se ven como tarjetas visuales con conteo
   de productos, no solo pestañas de texto.
 
+## Hero de la tienda como tarjeta flotante
+
+El encabezado de la tienda pública ahora es una tarjeta blanca con sombra que
+flota sobre la portada (como en Shopify), en vez de texto suelto sobre el
+fondo. También se unificó el ancho de toda la página para que se sienta
+diseñada, no descuadrada.
+
+**Importante sobre la portada:** la portada es una foto que el dueño del
+negocio sube en Configuración → Identidad. Si un negocio sube el logo de
+Bizly Store (la plataforma) como su portada por error, la tienda se va a ver
+como un anuncio de Bizly en vez de su propio negocio — hay que subir ahí una
+foto real del negocio/productos.
+
 ## Qué incluye este MVP
 
 - Registro / login (Firebase Auth)

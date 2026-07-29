@@ -164,7 +164,7 @@ export default function Store() {
     <div className="min-h-screen bg-bizly-cream pb-24">
       {/* Nav superior */}
       <nav className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b">
-        <div className="max-w-5xl mx-auto px-6 py-3 flex items-center justify-between">
+        <div className="max-w-3xl mx-auto px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2 min-w-0">
             {business.logoUrl && (
               <img src={business.logoUrl} alt="" className="w-7 h-7 rounded-full object-cover shrink-0" />
@@ -184,57 +184,71 @@ export default function Store() {
       {/* Hero */}
       <div id="inicio" className="relative">
         {business.coverUrl ? (
-          <div className="w-full h-48 sm:h-72 bg-black/10">
+          <div className="w-full h-40 sm:h-64 bg-black/10">
             <img src={business.coverUrl} alt="Portada" className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
           </div>
         ) : (
-          <div className="w-full h-28 sm:h-36" style={{ background: `linear-gradient(135deg, ${accent}, #111)` }} />
+          <div className="w-full h-24 sm:h-32" style={{ background: `linear-gradient(135deg, ${accent}, #111)` }} />
         )}
 
-        <div className="max-w-5xl mx-auto px-6">
-          <div className={`flex flex-col items-center text-center ${business.coverUrl ? '-mt-14' : '-mt-10'}`}>
+        <div className="max-w-3xl mx-auto px-6">
+          <div className="bg-white rounded-3xl shadow-lg -mt-10 sm:-mt-14 px-6 py-8 flex flex-col items-center text-center relative z-10">
             {business.logoUrl ? (
               <img
                 src={business.logoUrl}
                 alt={business.name}
-                className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg bg-white"
+                className="w-20 h-20 rounded-full object-cover border-4 border-white shadow-md -mt-16 bg-white"
               />
             ) : (
               <div
-                className="w-24 h-24 rounded-full border-4 border-white shadow-lg text-white flex items-center justify-center font-heading text-3xl font-bold"
+                className="w-20 h-20 rounded-full border-4 border-white shadow-md -mt-16 text-white flex items-center justify-center font-heading text-2xl font-bold"
                 style={{ backgroundColor: accent }}
               >
                 {business.name.charAt(0).toUpperCase()}
               </div>
             )}
 
-            <h1 className="font-heading text-3xl font-bold mt-4">{business.name}</h1>
+            <h1 className="font-heading text-2xl sm:text-3xl font-bold mt-3">{business.name}</h1>
 
-            <div className="flex flex-wrap items-center justify-center gap-2 mt-2 text-xs text-black/50">
-              {categoryLabel && <span className="px-2.5 py-1 rounded-full bg-black/5">{categoryLabel}</span>}
-              {business.location && <span className="px-2.5 py-1 rounded-full bg-black/5">📍 {business.location}</span>}
+            <div className="flex flex-wrap items-center justify-center gap-2 mt-2.5 text-xs">
+              {categoryLabel && (
+                <span
+                  className="px-3 py-1 rounded-full font-medium"
+                  style={{ backgroundColor: `${accent}15`, color: accent }}
+                >
+                  {categoryLabel}
+                </span>
+              )}
+              {business.location && (
+                <span className="px-3 py-1 rounded-full bg-black/5 text-black/50 font-medium">
+                  📍 {business.location}
+                </span>
+              )}
               {template.showSchedule && business.schedule && (
-                <span className="px-2.5 py-1 rounded-full bg-black/5">🕒 {business.schedule}</span>
+                <span className="px-3 py-1 rounded-full bg-black/5 text-black/50 font-medium">
+                  🕒 {business.schedule}
+                </span>
               )}
             </div>
 
-            {business.description && <p className="text-black/60 mt-3 max-w-md">{business.description}</p>}
+            {business.description && (
+              <p className="text-black/55 mt-3 max-w-md text-sm leading-relaxed">{business.description}</p>
+            )}
 
             {(business.socialLinks?.instagram || business.socialLinks?.facebook) && (
-              <div className="flex gap-3 mt-3 text-xs">
+              <div className="flex gap-4 mt-3 text-xs">
                 {business.socialLinks?.instagram && (
                   <a
                     href={`https://instagram.com/${business.socialLinks.instagram.replace('@', '')}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-black/50"
+                    className="text-black/45 font-medium"
                   >
                     📷 Instagram
                   </a>
                 )}
                 {business.socialLinks?.facebook && (
-                  <a href={business.socialLinks.facebook} target="_blank" rel="noreferrer" className="text-black/50">
+                  <a href={business.socialLinks.facebook} target="_blank" rel="noreferrer" className="text-black/45 font-medium">
                     📘 Facebook
                   </a>
                 )}
@@ -246,7 +260,7 @@ export default function Store() {
               target="_blank"
               rel="noreferrer"
               id="contacto"
-              className="inline-flex items-center gap-2 mt-5 px-6 py-3 rounded-full text-white text-sm font-semibold shadow-sm"
+              className="inline-flex items-center gap-2 mt-6 px-7 py-3 rounded-full text-white text-sm font-semibold shadow-md hover:opacity-90 transition"
               style={{ backgroundColor: accent }}
             >
               {template.ctaLabel}
@@ -256,29 +270,31 @@ export default function Store() {
       </div>
 
       {/* Buscador + orden */}
-      <div id="catalogo" className="max-w-5xl mx-auto px-6 pt-8 flex flex-col sm:flex-row gap-3 scroll-mt-16">
-        <input
-          type="text"
-          placeholder={`Buscar en ${template.catalogSectionLabel.toLowerCase()}...`}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 px-4 py-2.5 rounded-full border bg-white text-sm focus:outline-none"
-        />
-        <select
-          value={sort}
-          onChange={(e) => setSort(e.target.value as SortOption)}
-          className="px-4 py-2.5 rounded-full border bg-white text-sm"
-        >
-          <option value="relevancia">Relevancia</option>
-          <option value="nuevo">Más nuevos</option>
-          <option value="precio_asc">Precio: menor a mayor</option>
-          <option value="precio_desc">Precio: mayor a menor</option>
-        </select>
+      <div id="catalogo" className="max-w-3xl mx-auto px-6 pt-8 scroll-mt-16">
+        <div className="bg-white rounded-2xl shadow-sm p-3 flex flex-col sm:flex-row gap-2">
+          <input
+            type="text"
+            placeholder={`Buscar en ${template.catalogSectionLabel.toLowerCase()}...`}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="flex-1 px-4 py-2.5 rounded-xl bg-black/[0.03] text-sm focus:outline-none"
+          />
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value as SortOption)}
+            className="px-4 py-2.5 rounded-xl bg-black/[0.03] text-sm"
+          >
+            <option value="relevancia">Relevancia</option>
+            <option value="nuevo">Más nuevos</option>
+            <option value="precio_asc">Precio: menor a mayor</option>
+            <option value="precio_desc">Precio: mayor a menor</option>
+          </select>
+        </div>
       </div>
 
       {/* Categorías visuales */}
       {categories.length > 1 && (
-        <div className="max-w-5xl mx-auto px-6 pt-6">
+        <div className="max-w-3xl mx-auto px-6 pt-6">
           <p className="text-xs text-black/40 mb-2 font-medium">Explora por categoría</p>
           <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
             <button
@@ -315,7 +331,7 @@ export default function Store() {
         </div>
       )}
 
-      <main className="max-w-5xl mx-auto px-6 py-8">
+      <main className="max-w-3xl mx-auto px-6 py-8">
         {products.length === 0 ? (
           <p className="text-center text-black/40 py-16">{template.emptyStateLabel}</p>
         ) : filteredProducts.length === 0 ? (
