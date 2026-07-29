@@ -18,6 +18,10 @@ export default function Settings() {
   const [description, setDescription] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
   const [location, setLocation] = useState('');
+  const [schedule, setSchedule] = useState('');
+  const [primaryColor, setPrimaryColor] = useState('#2E8B00');
+  const [instagram, setInstagram] = useState('');
+  const [facebook, setFacebook] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -28,6 +32,10 @@ export default function Settings() {
     setDescription(business.description);
     setWhatsapp(business.whatsapp);
     setLocation(business.location || '');
+    setSchedule(business.schedule || '');
+    setPrimaryColor(business.primaryColor || '#2E8B00');
+    setInstagram(business.socialLinks?.instagram || '');
+    setFacebook(business.socialLinks?.facebook || '');
   }, [business]);
 
   async function handleSubmit(e: FormEvent) {
@@ -41,6 +49,9 @@ export default function Settings() {
       description,
       whatsapp,
       location,
+      schedule,
+      primaryColor,
+      socialLinks: { instagram, facebook },
     });
     await refreshBusiness();
     setSaving(false);
@@ -168,6 +179,52 @@ export default function Settings() {
               value={location}
               onChange={(e) => setLocation(e.target.value)}
             />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium">Horario de atención (opcional)</label>
+            <input
+              className="w-full mt-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-bizly-green"
+              value={schedule}
+              onChange={(e) => setSchedule(e.target.value)}
+              placeholder="Ej. Lun-Sáb 9am-8pm"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium">Color de marca</label>
+            <div className="flex items-center gap-3 mt-1">
+              <input
+                type="color"
+                value={primaryColor}
+                onChange={(e) => setPrimaryColor(e.target.value)}
+                className="w-12 h-10 rounded-lg border cursor-pointer"
+              />
+              <span className="text-xs text-black/40">
+                Se usa en los botones y acentos de tu tienda pública.
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium">Instagram (opcional)</label>
+              <input
+                className="w-full mt-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-bizly-green"
+                value={instagram}
+                onChange={(e) => setInstagram(e.target.value)}
+                placeholder="@tu_negocio"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Facebook (opcional)</label>
+              <input
+                className="w-full mt-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-bizly-green"
+                value={facebook}
+                onChange={(e) => setFacebook(e.target.value)}
+                placeholder="URL de tu página"
+              />
+            </div>
           </div>
 
           <button

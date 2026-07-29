@@ -121,6 +121,23 @@ En tu Dashboard → pestaña **🛒 Pedidos** puedes:
 El dashboard ahora tiene navegación por pestañas: **Productos / Pedidos / Configuración**,
 disponible en las tres páginas.
 
+## Tienda pública profesional (por categoría)
+
+La tienda pública ahora se adapta según la categoría del negocio (Alimentos,
+Moda, Tecnología, Servicios, Belleza, u otra) usando un solo sistema de
+plantillas configurable en `src/config/storeTemplates.ts` — cambia textos,
+etiquetas de producto (Más vendido/Nuevo/Recomendado/Promoción), qué campos
+destacar (marca/modelo para tecnología, horario para comida), y el texto del
+botón principal. Agregar una categoría nueva es agregar una entrada en ese
+archivo, sin tocar el resto del sistema.
+
+También incluye:
+- **Carrito lateral** (desliza desde la derecha) en vez de la barra inferior simple
+- **Navegación inferior estilo app** en móvil: Inicio | Catálogo | Carrito | Contacto
+- **Buscador y ordenar** (relevancia, más nuevos, precio)
+- **Color de marca personalizable** desde Configuración — se aplica a botones y acentos de la tienda
+- **Horario de atención y redes sociales** (Instagram/Facebook) opcionales, configurables por el negocio
+
 ## Qué incluye este MVP
 
 - Registro / login (Firebase Auth)

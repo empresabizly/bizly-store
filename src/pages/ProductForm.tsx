@@ -3,7 +3,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useAuth } from '../context/AuthContext';
-import { Product } from '../types';
+import { Product, ProductBadge, PRODUCT_BADGE_LABELS } from '../types';
 import ProductImageUploader from '../components/ProductImageUploader';
 import { CloudinaryUploadResult } from '../cloudinary/upload';
 
@@ -17,6 +17,9 @@ export default function ProductForm() {
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
   const [category, setCategory] = useState('');
+  const [brand, setBrand] = useState('');
+  const [model, setModel] = useState('');
+  const [badge, setBadge] = useState<ProductBadge | ''>('');
   const [imageUrl, setImageUrl] = useState('');
   const [imageCloudinaryId, setImageCloudinaryId] = useState('');
   const [imageCreatedAt, setImageCreatedAt] = useState<number | undefined>(undefined);
@@ -34,6 +37,9 @@ export default function ProductForm() {
         setDescription(p.description);
         setPrice(String(p.price));
         setCategory(p.category);
+        setBrand(p.brand || '');
+        setModel(p.model || '');
+        setBadge(p.badge || '');
         setImageUrl(p.imageUrl || '');
         setImageCloudinaryId(p.imageCloudinaryId || '');
         setImageCreatedAt(p.imageCreatedAt);
@@ -72,6 +78,9 @@ export default function ProductForm() {
       available,
       featured,
       createdAt: Date.now(),
+      ...(brand ? { brand } : {}),
+      ...(model ? { model } : {}),
+      ...(badge ? { badge } : {}),
       ...(imageUrl ? { imageUrl } : {}),
       ...(imageCloudinaryId ? { imageCloudinaryId } : {}),
       ...(imageCreatedAt ? { imageCreatedAt } : {}),
@@ -136,6 +145,43 @@ export default function ProductForm() {
                 placeholder="Ej. Ropa"
               />
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium">Marca (opcional)</label>
+              <input
+                className="w-full mt-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-bizly-green"
+                value={brand}
+                onChange={(e) => setBrand(e.target.value)}
+                placeholder="Ej. Samsung"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Modelo (opcional)</label>
+              <input
+                className="w-full mt-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-bizly-green"
+                value={model}
+                onChange={(e) => setModel(e.target.value)}
+                placeholder="Ej. Galaxy A54"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium">Etiqueta (opcional)</label>
+            <select
+              className="w-full mt-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-bizly-green bg-white"
+              value={badge}
+              onChange={(e) => setBadge(e.target.value as ProductBadge | '')}
+            >
+              <option value="">Sin etiqueta</option>
+              {(Object.keys(PRODUCT_BADGE_LABELS) as ProductBadge[]).map((b) => (
+                <option key={b} value={b}>
+                  {PRODUCT_BADGE_LABELS[b]}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>

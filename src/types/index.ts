@@ -17,6 +17,8 @@ export interface Business {
     facebook?: string;
   };
   location?: string;
+  schedule?: string;
+  primaryColor?: string;
   theme: 'minimalista'; // más temas se agregan después
   plan: 'gratis' | 'basico' | 'emprendedor' | 'negocio';
   createdAt: number;
@@ -29,6 +31,9 @@ export interface Product {
   description: string;
   price: number;
   category: string;
+  brand?: string;
+  model?: string;
+  badge?: ProductBadge;
   imageUrl?: string;
   imageCloudinaryId?: string;
   imageCreatedAt?: number;
@@ -36,6 +41,15 @@ export interface Product {
   featured: boolean;
   createdAt: number;
 }
+
+export type ProductBadge = 'mas_vendido' | 'nuevo' | 'recomendado' | 'promocion';
+
+export const PRODUCT_BADGE_LABELS: Record<ProductBadge, string> = {
+  mas_vendido: 'Más vendido',
+  nuevo: 'Nuevo',
+  recomendado: 'Recomendado',
+  promocion: 'Promoción',
+};
 
 export interface CartItem {
   product: Product;
