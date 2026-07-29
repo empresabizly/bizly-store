@@ -64,7 +64,7 @@ export function validateImageLoads(file: File): Promise<ValidationResult> {
 export function uploadToCloudinary(
   file: File,
   userId: string,
-  kind: 'logos' | 'products',
+  kind: 'logos' | 'products' | 'covers',
   onProgress?: (percent: number) => void
 ): Promise<CloudinaryUploadResult> {
   return new Promise((resolve, reject) => {

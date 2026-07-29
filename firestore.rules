@@ -19,5 +19,15 @@ service cloud.firestore {
       allow delete: if request.auth != null &&
         get(/databases/$(database)/documents/businesses/$(resource.data.businessId)).data.ownerId == request.auth.uid;
     }
+
+    // Pedidos: cualquier cliente (sin cuenta) puede crear un pedido desde la
+    // tienda pública al hacer checkout. Solo el dueño del negocio puede leer
+    // o actualizar el estado de sus propios pedidos. No se permite borrar.
+    match /orders/{orderId} {
+      allow create: if true;
+      allow read, update: if request.auth != null &&
+        get(/databases/$(database)/documents/businesses/$(resource.data.businessId)).data.ownerId == request.auth.uid;
+      allow delete: if false;
+    }
   }
 }

@@ -9,6 +9,8 @@ export interface Business {
   logoCloudinaryId?: string;
   logoCreatedAt?: number;
   coverUrl?: string;
+  coverCloudinaryId?: string;
+  coverCreatedAt?: number;
   whatsapp: string;
   socialLinks?: {
     instagram?: string;
@@ -39,6 +41,40 @@ export interface CartItem {
   product: Product;
   quantity: number;
 }
+
+export interface OrderItem {
+  productId: string;
+  name: string;
+  price: number;
+  quantity: number;
+}
+
+export type OrderStatus = 'nuevo' | 'confirmado' | 'completado' | 'cancelado';
+
+export interface Order {
+  id: string;
+  businessId: string;
+  items: OrderItem[];
+  total: number;
+  customerName: string;
+  customerPhone?: string;
+  status: OrderStatus;
+  createdAt: number;
+}
+
+export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
+  nuevo: 'Nuevo',
+  confirmado: 'Confirmado',
+  completado: 'Completado',
+  cancelado: 'Cancelado',
+};
+
+export const ORDER_STATUS_COLORS: Record<OrderStatus, string> = {
+  nuevo: 'bg-amber-100 text-amber-700',
+  confirmado: 'bg-blue-100 text-blue-700',
+  completado: 'bg-green-100 text-green-700',
+  cancelado: 'bg-red-100 text-red-700',
+};
 
 export const BUSINESS_CATEGORIES = [
   { value: 'moda', label: '👕 Moda y ropa' },

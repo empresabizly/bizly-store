@@ -3,7 +3,7 @@ import { validateImageFile, validateImageLoads, uploadToCloudinary, CloudinaryUp
 import { useAuth } from '../context/AuthContext';
 
 interface ImageUploaderProps {
-  kind: 'logos' | 'products';
+  kind: 'logos' | 'products' | 'covers';
   currentImageUrl?: string;
   onUploaded: (result: CloudinaryUploadResult) => void;
   onRemoved?: () => void;

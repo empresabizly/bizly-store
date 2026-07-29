@@ -4,7 +4,8 @@ import { collection, query, where, getDocs, deleteDoc, doc } from 'firebase/fire
 import { db } from '../firebase/config';
 import { useAuth } from '../context/AuthContext';
 import { Product } from '../types';
-import LogoUploader from '../components/LogoUploader';
+import { getPlanFeatures } from '../config/plans';
+import DashboardNav from '../components/DashboardNav';
 
 export default function Dashboard() {
   const { user, business, logout, loading: authLoading } = useAuth();
@@ -39,8 +40,8 @@ export default function Dashboard() {
     return <div className="min-h-screen flex items-center justify-center text-black/50">Cargando...</div>;
   }
 
-  const freeLimit = business.plan === 'gratis' ? 10 : Infinity;
-  const atLimit = products.length >= freeLimit;
+  const planFeatures = getPlanFeatures(business);
+  const atLimit = products.length >= planFeatures.maxProducts;
 
   return (
     <div className="min-h-screen bg-bizly-cream">
@@ -59,22 +60,21 @@ export default function Dashboard() {
             </a>
           </div>
         </div>
-        <button onClick={logout} className="text-sm text-black/50">
-          Cerrar sesión
-        </button>
+        <div className="flex items-center gap-3">
+          <button onClick={logout} className="text-sm text-black/50">
+            Cerrar sesión
+          </button>
+        </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-6 py-8">
-        <div className="bg-white rounded-xl shadow-sm p-5 mb-8">
-          <h2 className="font-heading text-sm font-semibold mb-3">🏪 Logo de tu negocio</h2>
-          <LogoUploader />
-        </div>
+      <DashboardNav active="productos" />
 
+      <main className="max-w-4xl mx-auto px-6 py-8">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="font-heading text-lg font-semibold">📦 Productos</h2>
             <p className="text-xs text-black/40">
-              {products.length} / {business.plan === 'gratis' ? '10 (plan gratis)' : 'ilimitados'}
+              {products.length} / {planFeatures.maxProducts === Infinity ? 'ilimitados' : `${planFeatures.maxProducts} (plan ${planFeatures.label})`}
             </p>
           </div>
           <Link
@@ -89,7 +89,7 @@ export default function Dashboard() {
 
         {atLimit && (
           <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3 mb-6">
-            Alcanzaste el límite de 10 productos del plan gratis. Sube de plan para agregar más.
+            Alcanzaste el límite de {planFeatures.maxProducts} productos del plan {planFeatures.label}. Sube de plan para agregar más.
           </p>
         )}
 
