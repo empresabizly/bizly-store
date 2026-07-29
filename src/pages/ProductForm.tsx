@@ -51,10 +51,10 @@ export default function ProductForm() {
       description,
       price: Number(price),
       category,
-      imageUrl: imageUrl || undefined,
       available,
       featured,
       createdAt: Date.now(),
+      ...(imageUrl ? { imageUrl } : {}),
     };
 
     await setDoc(doc(db, 'products', id), product);
