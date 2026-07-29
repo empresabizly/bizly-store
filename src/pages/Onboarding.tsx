@@ -20,7 +20,7 @@ export default function Onboarding() {
   const navigate = useNavigate();
 
   const [name, setName] = useState('');
- const [category, setCategory] = useState<string>(BUSINESS_CATEGORIES[0].value);
+  const [category, setCategory] = useState<string>(BUSINESS_CATEGORIES[0].value);
   const [description, setDescription] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
   const [location, setLocation] = useState('');

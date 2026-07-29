@@ -4,6 +4,8 @@ import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useAuth } from '../context/AuthContext';
 import { Product } from '../types';
+import ProductImageUploader from '../components/ProductImageUploader';
+import { CloudinaryUploadResult } from '../cloudinary/upload';
 
 export default function ProductForm() {
   const { business } = useAuth();
@@ -16,6 +18,8 @@ export default function ProductForm() {
   const [price, setPrice] = useState('');
   const [category, setCategory] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [imageCloudinaryId, setImageCloudinaryId] = useState('');
+  const [imageCreatedAt, setImageCreatedAt] = useState<number | undefined>(undefined);
   const [available, setAvailable] = useState(true);
   const [featured, setFeatured] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -31,12 +35,26 @@ export default function ProductForm() {
         setPrice(String(p.price));
         setCategory(p.category);
         setImageUrl(p.imageUrl || '');
+        setImageCloudinaryId(p.imageCloudinaryId || '');
+        setImageCreatedAt(p.imageCreatedAt);
         setAvailable(p.available);
         setFeatured(p.featured);
       }
     }
     load();
   }, [isEditing, productId]);
+
+  function handleImageUploaded(result: CloudinaryUploadResult) {
+    setImageUrl(result.url);
+    setImageCloudinaryId(result.cloudinaryId);
+    setImageCreatedAt(Date.now());
+  }
+
+  function handleImageRemoved() {
+    setImageUrl('');
+    setImageCloudinaryId('');
+    setImageCreatedAt(undefined);
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -55,6 +73,8 @@ export default function ProductForm() {
       featured,
       createdAt: Date.now(),
       ...(imageUrl ? { imageUrl } : {}),
+      ...(imageCloudinaryId ? { imageCloudinaryId } : {}),
+      ...(imageCreatedAt ? { imageCreatedAt } : {}),
     };
 
     await setDoc(doc(db, 'products', id), product);
@@ -119,16 +139,12 @@ export default function ProductForm() {
           </div>
 
           <div>
-            <label className="text-sm font-medium">URL de imagen (opcional)</label>
-            <input
-              className="w-full mt-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-bizly-green"
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
-              placeholder="https://..."
+            <label className="text-sm font-medium mb-2 block">Foto del producto</label>
+            <ProductImageUploader
+              currentImageUrl={imageUrl}
+              onUploaded={handleImageUploaded}
+              onRemoved={handleImageRemoved}
             />
-            <p className="text-xs text-black/40 mt-1">
-              La subida directa de fotos requiere activar Firebase Storage (plan Blaze).
-            </p>
           </div>
 
           <div className="flex gap-6">

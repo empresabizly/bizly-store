@@ -82,6 +82,13 @@ export default function Store() {
       {/* Portada minimalista */}
       <header className="bg-white border-b">
         <div className="max-w-3xl mx-auto px-6 py-10 text-center">
+          {business.logoUrl && (
+            <img
+              src={business.logoUrl}
+              alt={business.name}
+              className="w-20 h-20 rounded-full object-cover mx-auto mb-4 border"
+            />
+          )}
           <h1 className="font-heading text-2xl font-bold">{business.name}</h1>
           {business.description && <p className="text-black/50 mt-2">{business.description}</p>}
           {business.location && <p className="text-xs text-black/30 mt-2">📍 {business.location}</p>}

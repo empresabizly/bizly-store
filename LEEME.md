@@ -34,6 +34,26 @@ Si prefieres, en la siguiente sesión puedo ayudarte a dejar todo listo para que
 solo tengas que arrastrar y soltar, o revisar el proyecto contigo paso a paso
 cuando llegues a esta parte.
 
+## Configurar Cloudinary (subida real de fotos)
+
+1. Crea una cuenta gratis en https://cloudinary.com
+2. En el Dashboard, copia tu **Cloud Name** (aparece arriba).
+3. Ve a **Settings ⚙️ → Upload → Upload presets → Add upload preset**:
+   - **Signing Mode:** Unsigned
+   - **Folder:** déjalo vacío (el código ya arma la carpeta `bizly/users/{userId}/logos` o `/products` automáticamente).
+   - En **Upload Manipulations / Incoming Transformation**, agrega:
+     - Quality: `auto`
+     - Fetch format: `auto`
+     - Width: `1200`, Crop: `limit` (esto redimensiona solo si la imagen es más ancha de 1200px, sin recortar)
+   - Guarda el preset y anota su **nombre**.
+4. Abre `src/cloudinary/config.ts` en el proyecto y reemplaza:
+   - `REEMPLAZA_CLOUD_NAME` → tu Cloud Name
+   - `REEMPLAZA_UPLOAD_PRESET` → el nombre del preset que creaste
+
+Con eso, subir logo y fotos de producto funciona directo desde el navegador, sin backend y sin activar Firebase Blaze.
+
+**Nota sobre "Eliminar imagen":** al eliminar, la imagen deja de mostrarse en la app (se borra la referencia en Firestore), pero el archivo permanece guardado en tu cuenta de Cloudinary. Borrarlo de forma permanente ahí requiere una llamada firmada desde un servidor (con tu API Secret), que no se implementa aquí a propósito para no necesitar backend ni costos adicionales. Si más adelante quieres borrado permanente automático, es una mejora futura con una función de servidor.
+
 ## Qué incluye este MVP
 
 - Registro / login (Firebase Auth)

@@ -6,6 +6,8 @@ export interface Business {
   category: string;
   description: string;
   logoUrl?: string;
+  logoCloudinaryId?: string;
+  logoCreatedAt?: number;
   coverUrl?: string;
   whatsapp: string;
   socialLinks?: {
@@ -26,6 +28,8 @@ export interface Product {
   price: number;
   category: string;
   imageUrl?: string;
+  imageCloudinaryId?: string;
+  imageCreatedAt?: number;
   available: boolean;
   featured: boolean;
   createdAt: number;

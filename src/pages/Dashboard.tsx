@@ -4,6 +4,7 @@ import { collection, query, where, getDocs, deleteDoc, doc } from 'firebase/fire
 import { db } from '../firebase/config';
 import { useAuth } from '../context/AuthContext';
 import { Product } from '../types';
+import LogoUploader from '../components/LogoUploader';
 
 export default function Dashboard() {
   const { user, business, logout, loading: authLoading } = useAuth();
@@ -64,6 +65,11 @@ export default function Dashboard() {
       </header>
 
       <main className="max-w-4xl mx-auto px-6 py-8">
+        <div className="bg-white rounded-xl shadow-sm p-5 mb-8">
+          <h2 className="font-heading text-sm font-semibold mb-3">🏪 Logo de tu negocio</h2>
+          <LogoUploader />
+        </div>
+
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="font-heading text-lg font-semibold">📦 Productos</h2>
