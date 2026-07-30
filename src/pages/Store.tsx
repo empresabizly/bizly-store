@@ -12,9 +12,21 @@ import {
   PRODUCT_BADGE_LABELS,
 } from '../types';
 import { getPlanFeatures } from '../config/plans';
-import { getStoreTemplate } from '../config/storeTemplates';
+import { getStoreEngine } from '../config/storeTemplates';
+import { useFavorites } from '../utils/useFavorites';
 
 type SortOption = 'relevancia' | 'precio_asc' | 'precio_desc' | 'nuevo';
+
+function foodCategoryIcon(category: string) {
+  const key = category.toLowerCase();
+  if (key.includes('pastel') || key.includes('cake')) return '🍰';
+  if (key.includes('cupcake')) return '🧁';
+  if (key.includes('galleta') || key.includes('cookie')) return '🍪';
+  if (key.includes('bebida') || key.includes('drink')) return '🥤';
+  if (key.includes('promo')) return '🏷️';
+  if (key.includes('individual')) return '🍨';
+  return '🍽️';
+}
 
 export default function Store() {
   const { slug } = useParams();
@@ -30,6 +42,8 @@ export default function Store() {
   const [customerPhone, setCustomerPhone] = useState('');
   const [sendingOrder, setSendingOrder] = useState(false);
   const [orderError, setOrderError] = useState('');
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const { favorites, toggleFavorite, isFavorite } = useFavorites(business?.id || slug || 'tienda');
 
   useEffect(() => {
     async function load() {
@@ -121,6 +135,7 @@ export default function Store() {
   const filteredProducts = useMemo(() => {
     let list = [...products];
     if (activeCategory) list = list.filter((p) => p.category === activeCategory);
+    if (showFavoritesOnly) list = list.filter((p) => favorites.includes(p.id));
     if (search.trim()) {
       const q = search.trim().toLowerCase();
       list = list.filter(
@@ -131,7 +146,7 @@ export default function Store() {
     else if (sort === 'precio_desc') list.sort((a, b) => b.price - a.price);
     else if (sort === 'nuevo') list.sort((a, b) => b.createdAt - a.createdAt);
     return list;
-  }, [products, activeCategory, search, sort]);
+  }, [products, activeCategory, search, sort, showFavoritesOnly, favorites]);
 
   function scrollTo(id: string) {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -158,7 +173,10 @@ export default function Store() {
   const featured = filteredProducts.filter((p) => p.featured);
   const rest = filteredProducts.filter((p) => !p.featured);
   const showBranding = !getPlanFeatures(business).removeBranding;
-  const template = getStoreTemplate(business);
+  const engine = getStoreEngine(business);
+  const buttonRadiusClass = engine.buttonRadius === 'full' ? 'rounded-full' : 'rounded-lg';
+  const newArrivals = [...products].sort((a, b) => b.createdAt - a.createdAt).slice(0, 4);
+  const showNewArrivals = !activeCategory && !search.trim() && !showFavoritesOnly && sort === 'relevancia' && products.length >= 4;
 
   return (
     <div className="min-h-screen bg-bizly-cream pb-24">
@@ -209,6 +227,11 @@ export default function Store() {
             )}
 
             <h1 className="font-heading text-2xl sm:text-3xl font-bold mt-3">{business.name}</h1>
+            {business.tagline && (
+              <p className="text-sm font-medium mt-1" style={{ color: accent }}>
+                {business.tagline}
+              </p>
+            )}
 
             <div className="flex flex-wrap items-center justify-center gap-2 mt-2.5 text-xs">
               {categoryLabel && (
@@ -224,7 +247,7 @@ export default function Store() {
                   📍 {business.location}
                 </span>
               )}
-              {template.showSchedule && business.schedule && (
+              {engine.showSchedule && business.schedule && (
                 <span className="px-3 py-1 rounded-full bg-black/5 text-black/50 font-medium">
                   🕒 {business.schedule}
                 </span>
@@ -260,10 +283,10 @@ export default function Store() {
               target="_blank"
               rel="noreferrer"
               id="contacto"
-              className="inline-flex items-center gap-2 mt-6 px-7 py-3 rounded-full text-white text-sm font-semibold shadow-md hover:opacity-90 transition"
+              className={`inline-flex items-center gap-2 mt-6 px-7 py-3 ${buttonRadiusClass} text-white text-sm font-semibold shadow-md hover:opacity-90 transition`}
               style={{ backgroundColor: accent }}
             >
-              {template.ctaLabel}
+              {engine.ctaLabel}
             </a>
           </div>
         </div>
@@ -274,7 +297,7 @@ export default function Store() {
         <div className="bg-white rounded-2xl shadow-sm p-3 flex flex-col sm:flex-row gap-2">
           <input
             type="text"
-            placeholder={`Buscar en ${template.catalogSectionLabel.toLowerCase()}...`}
+            placeholder={`Buscar en ${engine.catalogSectionLabel.toLowerCase()}...`}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="flex-1 px-4 py-2.5 rounded-xl bg-black/[0.03] text-sm focus:outline-none"
@@ -292,6 +315,17 @@ export default function Store() {
         </div>
       </div>
 
+      {business.deliveryInfo && (
+        <div className="max-w-3xl mx-auto px-6 pt-4">
+          <div
+            className="rounded-2xl px-4 py-3 text-sm font-medium flex items-center gap-2"
+            style={{ backgroundColor: `${accent}12`, color: accent }}
+          >
+            🚚 {business.deliveryInfo}
+          </div>
+        </div>
+      )}
+
       {/* Categorías visuales */}
       {categories.length > 1 && (
         <div className="max-w-3xl mx-auto px-6 pt-6">
@@ -299,32 +333,80 @@ export default function Store() {
           <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
             <button
               onClick={() => setActiveCategory(null)}
-              className="shrink-0 flex flex-col items-center justify-center w-20 h-20 rounded-2xl border text-xs font-medium"
+              className={
+                engine.key === 'food'
+                  ? 'shrink-0 flex flex-col items-center gap-1.5 w-16'
+                  : 'shrink-0 flex flex-col items-center justify-center w-20 h-20 rounded-2xl border text-xs font-medium'
+              }
               style={
-                !activeCategory
+                engine.key === 'food'
+                  ? undefined
+                  : !activeCategory
                   ? { backgroundColor: accent, color: 'white', borderColor: accent }
                   : { color: 'rgba(0,0,0,0.6)', borderColor: 'rgba(0,0,0,0.1)', backgroundColor: 'white' }
               }
             >
-              <span className="text-lg">🗂️</span>
-              Todo
+              {engine.key === 'food' ? (
+                <>
+                  <span
+                    className="w-14 h-14 rounded-full flex items-center justify-center text-xl"
+                    style={
+                      !activeCategory
+                        ? { backgroundColor: accent, color: 'white' }
+                        : { backgroundColor: 'white', color: 'rgba(0,0,0,0.6)', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }
+                    }
+                  >
+                    🍽️
+                  </span>
+                  <span className="text-[11px] text-black/60 font-medium">Todo</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-lg">🗂️</span>
+                  Todo
+                </>
+              )}
             </button>
             {categories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className="shrink-0 flex flex-col items-center justify-center w-20 h-20 rounded-2xl border text-xs font-medium px-1 text-center"
+                className={
+                  engine.key === 'food'
+                    ? 'shrink-0 flex flex-col items-center gap-1.5 w-16'
+                    : 'shrink-0 flex flex-col items-center justify-center w-20 h-20 rounded-2xl border text-xs font-medium px-1 text-center'
+                }
                 style={
-                  activeCategory === cat
+                  engine.key === 'food'
+                    ? undefined
+                    : activeCategory === cat
                     ? { backgroundColor: accent, color: 'white', borderColor: accent }
                     : { color: 'rgba(0,0,0,0.6)', borderColor: 'rgba(0,0,0,0.1)', backgroundColor: 'white' }
                 }
               >
-                <span className="text-lg">🏷️</span>
-                <span className="truncate w-full">{cat}</span>
-                <span className="text-[10px] opacity-70">
-                  {products.filter((p) => p.category === cat).length}
-                </span>
+                {engine.key === 'food' ? (
+                  <>
+                    <span
+                      className="w-14 h-14 rounded-full flex items-center justify-center text-xl"
+                      style={
+                        activeCategory === cat
+                          ? { backgroundColor: accent, color: 'white' }
+                          : { backgroundColor: 'white', color: 'rgba(0,0,0,0.6)', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }
+                      }
+                    >
+                      {foodCategoryIcon(cat)}
+                    </span>
+                    <span className="text-[11px] text-black/60 font-medium truncate w-full text-center">{cat}</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-lg">🏷️</span>
+                    <span className="truncate w-full">{cat}</span>
+                    <span className="text-[10px] opacity-70">
+                      {products.filter((p) => p.category === cat).length}
+                    </span>
+                  </>
+                )}
               </button>
             ))}
           </div>
@@ -332,33 +414,65 @@ export default function Store() {
       )}
 
       <main className="max-w-3xl mx-auto px-6 py-8">
+        {showFavoritesOnly && (
+          <div className="flex items-center justify-between mb-6 bg-white rounded-xl shadow-sm px-4 py-3">
+            <span className="text-sm font-medium">❤️ Viendo tus favoritos</span>
+            <button onClick={() => setShowFavoritesOnly(false)} className="text-xs font-medium" style={{ color: accent }}>
+              Ver todo
+            </button>
+          </div>
+        )}
         {products.length === 0 ? (
-          <p className="text-center text-black/40 py-16">{template.emptyStateLabel}</p>
+          <p className="text-center text-black/40 py-16">{engine.emptyStateLabel}</p>
         ) : filteredProducts.length === 0 ? (
-          <p className="text-center text-black/40 py-16">No encontramos productos con esa búsqueda.</p>
+          <p className="text-center text-black/40 py-16">
+            {showFavoritesOnly ? 'Todavía no tienes favoritos guardados.' : 'No encontramos productos con esa búsqueda.'}
+          </p>
         ) : (
           <div className="space-y-10">
+            {showNewArrivals && (
+              <section>
+                <h2 className="font-heading text-lg font-semibold mb-4">🆕 {engine.newArrivalsLabel}</h2>
+                <div className="flex gap-4 overflow-x-auto no-scrollbar pb-1">
+                  {newArrivals.map((p) => (
+                    <div key={p.id} className="w-40 shrink-0">
+                      <ProductCard product={p} onAdd={addToCart} engine={engine} accent={accent} buttonRadiusClass={buttonRadiusClass} isFavorite={isFavorite(p.id)} onToggleFavorite={() => toggleFavorite(p.id)} />
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
             {featured.length > 0 && (
               <section>
                 <h2 className="font-heading text-lg font-semibold mb-4">⭐ Destacados</h2>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
                   {featured.map((p) => (
-                    <ProductCard key={p.id} product={p} onAdd={addToCart} template={template} accent={accent} highlight />
+                    <ProductCard key={p.id} product={p} onAdd={addToCart} engine={engine} accent={accent} buttonRadiusClass={buttonRadiusClass} isFavorite={isFavorite(p.id)} onToggleFavorite={() => toggleFavorite(p.id)} highlight />
                   ))}
                 </div>
               </section>
             )}
             <section>
-              <h2 className="font-heading text-lg font-semibold mb-4">{template.catalogSectionLabel}</h2>
+              <h2 className="font-heading text-lg font-semibold mb-4">{engine.catalogSectionLabel}</h2>
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 {rest.map((p) => (
-                  <ProductCard key={p.id} product={p} onAdd={addToCart} template={template} accent={accent} />
+                  <ProductCard key={p.id} product={p} onAdd={addToCart} engine={engine} accent={accent} buttonRadiusClass={buttonRadiusClass} isFavorite={isFavorite(p.id)} onToggleFavorite={() => toggleFavorite(p.id)} />
                 ))}
               </div>
             </section>
           </div>
         )}
       </main>
+
+      {business.aboutText && (
+        <section className="max-w-3xl mx-auto px-6 pb-10">
+          <div className="bg-white rounded-2xl shadow-sm p-6">
+            <h2 className="font-heading text-lg font-semibold mb-3">Sobre nosotros</h2>
+            <p className="text-sm text-black/60 leading-relaxed whitespace-pre-line">{business.aboutText}</p>
+          </div>
+        </section>
+      )}
 
       <footer className="text-center py-8 border-t mt-4">
         <p className="font-heading font-semibold text-sm">{business.name}</p>
@@ -451,11 +565,35 @@ export default function Store() {
         <button onClick={() => scrollTo('inicio')} className="flex-1 py-3 text-center text-xs text-black/60">
           🏠<br />Inicio
         </button>
-        <button onClick={() => scrollTo('catalogo')} className="flex-1 py-3 text-center text-xs text-black/60">
-          🗂️<br />Catálogo
+        <button
+          onClick={() => {
+            setShowFavoritesOnly(false);
+            scrollTo('catalogo');
+          }}
+          className="flex-1 py-3 text-center text-xs text-black/60"
+        >
+          🗂️<br />{engine.key === 'food' ? 'Menú' : 'Catálogo'}
+        </button>
+        <button
+          onClick={() => {
+            setShowFavoritesOnly(true);
+            scrollTo('catalogo');
+          }}
+          className="flex-1 py-3 text-center text-xs relative"
+          style={showFavoritesOnly ? { color: accent } : { color: 'rgba(0,0,0,0.6)' }}
+        >
+          {showFavoritesOnly ? '❤️' : '🤍'}<br />Favoritos
+          {favorites.length > 0 && (
+            <span
+              className="absolute top-1 right-1/3 text-[10px] text-white rounded-full w-4 h-4 flex items-center justify-center"
+              style={{ backgroundColor: accent }}
+            >
+              {favorites.length}
+            </span>
+          )}
         </button>
         <button onClick={() => setCartOpen(true)} className="flex-1 py-3 text-center text-xs text-black/60 relative">
-          🛒<br />Carrito
+          🛒<br />{engine.key === 'food' ? 'Pedido' : 'Carrito'}
           {cartCount > 0 && (
             <span
               className="absolute top-1 right-1/3 text-[10px] text-white rounded-full w-4 h-4 flex items-center justify-center"
@@ -481,47 +619,142 @@ export default function Store() {
 function ProductCard({
   product,
   onAdd,
-  template,
+  engine,
   accent,
+  buttonRadiusClass,
+  isFavorite = false,
+  onToggleFavorite,
   highlight = false,
 }: {
   product: Product;
   onAdd: (p: Product) => void;
-  template: ReturnType<typeof getStoreTemplate>;
+  engine: ReturnType<typeof getStoreEngine>;
   accent: string;
+  buttonRadiusClass: string;
+  isFavorite?: boolean;
+  onToggleFavorite?: () => void;
   highlight?: boolean;
 }) {
+  const badgeLabel = engine.showBadges && product.badge ? PRODUCT_BADGE_LABELS[product.badge] : null;
+
+  const heartButton = onToggleFavorite && (
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        onToggleFavorite();
+      }}
+      className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 shadow-sm flex items-center justify-center text-sm z-10"
+      aria-label="Favorito"
+    >
+      {isFavorite ? '❤️' : '🤍'}
+    </button>
+  );
+
+  // Motor Food: imagen protagonista con degradado y precio superpuesto (estilo menú apetitoso)
+  if (engine.cardStyle === 'food') {
+    return (
+      <div
+        className="relative rounded-2xl overflow-hidden shadow-sm transition hover:shadow-md hover:-translate-y-0.5 aspect-square"
+        style={highlight ? { boxShadow: `0 0 0 2px ${accent}` } : undefined}
+      >
+        {product.imageUrl ? (
+          <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full bg-black/5 flex items-center justify-center text-black/20 text-xs">
+            Sin imagen
+          </div>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
+        {heartButton}
+        {(badgeLabel || product.featured) && (
+          <span
+            className="absolute top-2 left-2 text-white text-[10px] font-semibold px-2 py-1 rounded-full"
+            style={{ backgroundColor: accent }}
+          >
+            {badgeLabel || 'Destacado'}
+          </span>
+        )}
+        <div className="absolute inset-x-0 bottom-0 p-3 text-white">
+          <p className="font-semibold text-sm leading-tight">{product.name}</p>
+          <div className="flex items-center justify-between mt-1">
+            <span className="font-bold text-sm">${product.price} MXN</span>
+            <button
+              onClick={() => onAdd(product)}
+              className="w-8 h-8 rounded-full flex items-center justify-center text-white text-lg font-bold shrink-0"
+              style={{ backgroundColor: accent }}
+              aria-label={engine.addButtonLabel}
+            >
+              +
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Motor Fashion: tarjeta editorial, minimalista, imagen vertical, texto discreto
+  if (engine.cardStyle === 'fashion') {
+    return (
+      <div className="group">
+        <div className="relative aspect-[4/5] bg-black/5 overflow-hidden rounded-lg">
+          {heartButton}
+          {product.imageUrl ? (
+            <img
+              src={product.imageUrl}
+              alt={product.name}
+              className="w-full h-full object-cover transition group-hover:scale-105"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-black/20 text-xs">Sin imagen</div>
+          )}
+          {(badgeLabel || product.featured) && (
+            <span className="absolute top-2 left-2 bg-white/90 text-black/70 text-[10px] font-semibold px-2 py-1 rounded-full tracking-wide uppercase">
+              {badgeLabel || 'Destacado'}
+            </span>
+          )}
+        </div>
+        <div className="mt-2.5 text-center">
+          <p className="text-xs uppercase tracking-wide text-black/70 font-medium">{product.name}</p>
+          <p className="text-sm font-semibold mt-0.5" style={{ color: accent }}>
+            ${product.price} MXN
+          </p>
+          <button
+            onClick={() => onAdd(product)}
+            className="mt-2 text-[11px] uppercase tracking-wide font-semibold border-b pb-0.5"
+            style={{ borderColor: accent, color: accent }}
+          >
+            {engine.addButtonLabel}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Motor Business: tarjeta informativa, corporativa, con marca/modelo si aplica
   return (
     <div
-      className="bg-white rounded-2xl shadow-sm overflow-hidden transition hover:shadow-md hover:-translate-y-0.5"
+      className={`bg-white shadow-sm overflow-hidden transition hover:shadow-md ${buttonRadiusClass === 'rounded-full' ? 'rounded-2xl' : 'rounded-lg'}`}
       style={highlight ? { boxShadow: `0 0 0 1px ${accent}55` } : undefined}
     >
       <div className="relative aspect-square bg-black/5 flex items-center justify-center text-black/20 text-xs">
+        {heartButton}
         {product.imageUrl ? (
           <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
         ) : (
           'Sin imagen'
         )}
-        {template.showBadges && product.badge && (
+        {(badgeLabel || product.featured) && (
           <span
             className="absolute top-2 left-2 text-white text-[10px] font-semibold px-2 py-1 rounded-full"
             style={{ backgroundColor: accent }}
           >
-            {PRODUCT_BADGE_LABELS[product.badge]}
-          </span>
-        )}
-        {product.featured && !product.badge && (
-          <span
-            className="absolute top-2 left-2 text-white text-[10px] font-semibold px-2 py-1 rounded-full"
-            style={{ backgroundColor: accent }}
-          >
-            Destacado
+            {badgeLabel || 'Destacado'}
           </span>
         )}
       </div>
       <div className="p-4">
         <p className="font-medium">{product.name}</p>
-        {template.showBrandModel && (product.brand || product.model) && (
+        {engine.showBrandModel && (product.brand || product.model) && (
           <p className="text-xs text-black/40 mt-0.5">
             {[product.brand, product.model].filter(Boolean).join(' · ')}
           </p>
@@ -533,9 +766,9 @@ function ProductCard({
           </span>
           <button
             onClick={() => onAdd(product)}
-            className="px-3 py-1.5 rounded-full bg-bizly-dark text-white text-xs font-medium"
+            className={`px-3 py-1.5 ${buttonRadiusClass} bg-bizly-dark text-white text-xs font-medium`}
           >
-            {template.addButtonLabel}
+            {engine.addButtonLabel}
           </button>
         </div>
       </div>

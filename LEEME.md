@@ -165,6 +165,67 @@ Bizly Store (la plataforma) como su portada por error, la tienda se va a ver
 como un anuncio de Bizly en vez de su propio negocio — hay que subir ahí una
 foto real del negocio/productos.
 
+## Los 3 motores de diseño: Bizly Fashion / Bizly Food / Bizly Business
+
+Cada categoría de negocio se mapea automáticamente a uno de 3 "motores" con
+tarjetas de producto **visualmente distintas** (no solo texto distinto):
+
+- **Bizly Food** (alimentos): tarjeta cuadrada con la foto de fondo completa,
+  degradado oscuro, precio y botón "+" superpuestos — estilo menú apetitoso.
+- **Bizly Fashion** (moda, belleza, regalos, artesanías): tarjeta vertical
+  editorial, minimalista, texto en mayúsculas pequeñas, sin botón sólido —
+  estilo boutique.
+- **Bizly Business** (tecnología, servicios, hogar, educación, otros):
+  tarjeta clásica con marca/modelo cuando aplica — estilo catálogo corporativo.
+
+La configuración vive en `src/config/storeTemplates.ts` — agregar una
+categoría nueva es mapearla a uno de los 3 motores existentes.
+
+Además se agregó:
+- **Eslogan** del negocio (bajo el nombre, en el color de marca)
+- **Sección "Sobre nosotros"** (si se llena en Configuración)
+- **Sección "Nuevos lanzamientos"** con scroll horizontal de los últimos productos agregados
+- **Sugerencia automática de color de marca** a partir del logo (botón "🎨 Sugerir color a partir de mi logo" en Configuración → Diseño)
+- **Forma de botones** (redondos o rectos) según el motor de diseño
+
+## Qué quedó pendiente de este pedido (siendo honestos)
+
+- **Variantes de producto reales** (talla/color seleccionables con su propio
+  precio o stock) — el modelo de datos de producto no las soporta todavía;
+  es una funcionalidad nueva completa, no solo diseño.
+- **Editor visual de distribución** (mover/reordenar secciones arrastrando) —
+  hoy el orden de secciones es fijo por motor, no personalizable por el
+  usuario sin tocar código.
+
+## Favoritos e información de entrega (nuevo)
+
+- **Favoritos reales**: los clientes pueden marcar ❤️ productos en tu tienda
+  pública, guardado en su propio navegador (sin necesidad de cuenta). Desde
+  el nav inferior en móvil pueden filtrar para ver solo sus favoritos.
+- **Información de entrega**: un aviso corto (ej. "Envío a domicilio en
+  pedidos mayores a $500") que aparece como banner si lo llenas en Configuración.
+- **Motor Food mejorado**: categorías con íconos circulares temáticos
+  (🍰🧁🍪🥤), nav inferior con Inicio/Menú/Favoritos/Pedido/Contacto.
+
+**Nota:** se consideró agregar un campo de "testimonio de cliente" pero se
+descartó — un texto escrito por el propio dueño del negocio, sin forma de
+verificarse, se ve idéntico a una reseña falsa para quien visita la tienda.
+Mejor no incluirlo que arriesgar la credibilidad de cada negocio. Si más
+adelante se construye un sistema real de reseñas de clientes (verificadas,
+con calificación), ahí sí tendría sentido.
+
+## Lo que NO se construyó (para no fabricar datos falsos)
+
+- **Calificaciones con estrellas** en productos — requieren un sistema real
+  de reseñas de clientes, que no existe. No se pusieron estrellas fijas o
+  inventadas.
+- **Cuentas de clientes** (login, historial de pedidos por cliente) — el nav
+  inferior dice "Contacto" en vez de "Cuenta" porque esa función no existe
+  todavía; sería una funcionalidad nueva completa (autenticación de clientes,
+  separada de la autenticación de dueños de negocio).
+- **Feed en vivo de Instagram** — se muestra el enlace a tu Instagram, pero
+  no se traen fotos reales de tu cuenta (requeriría integración con la API de Meta).
+
 ## Qué incluye este MVP
 
 - Registro / login (Firebase Auth)

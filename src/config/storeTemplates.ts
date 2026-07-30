@@ -1,99 +1,96 @@
 /**
- * Sistema de plantillas de tienda por categoría.
+ * Bizly Store tiene 3 "motores de diseño" — no son componentes de página
+ * separados, sino configuraciones que cambian textos, forma de botones y
+ * el estilo de tarjeta de producto (ver ProductCard en Store.tsx, que lee
+ * `cardStyle` de aquí para renderizar cada motor de forma distinta).
  *
- * En vez de construir 5 componentes de página totalmente independientes
- * (StoreTemplate, RestaurantTemplate, FashionTemplate, etc.) que duplicarían
- * casi todo su código, usamos UNA sola página de tienda (Store.tsx) que lee
- * su configuración de aquí según la categoría del negocio: qué etiquetas
- * mostrar, qué texto usar en el botón principal, y qué campos extra de
- * producto destacar (marca/modelo, tallas, portafolio, etc.).
+ * - Bizly Fashion  → ropa, accesorios, belleza (editorial, minimalista)
+ * - Bizly Food     → restaurantes, cafeterías, repostería (fotos grandes, apetitoso)
+ * - Bizly Business → médicos, servicios, tecnología, empresas (corporativo, limpio)
  *
- * Esto cumple el mismo objetivo (cada categoría se ve y se siente distinta)
- * con una arquitectura mucho más fácil de mantener. Agregar una categoría
- * nueva es agregar una entrada aquí, no rehacer el sistema.
- *
- * Si en el futuro una categoría necesita una estructura de página
- * radicalmente distinta (no solo textos/campos), ahí sí se justifica
- * separarla en su propio componente — esta configuración ya deja ese
- * camino preparado.
+ * Agregar una categoría nueva es mapearla a uno de los 3 motores existentes
+ * (o crear un 4to motor aquí) — no hay que tocar Store.tsx para eso.
  */
 import { Business } from '../types';
 
-export interface StoreTemplateConfig {
+export type EngineKey = 'fashion' | 'food' | 'business';
+export type CardStyle = 'fashion' | 'food' | 'business';
+export type ButtonRadius = 'full' | 'md';
+
+export interface StoreEngine {
+  key: EngineKey;
+  engineName: string;
   ctaLabel: string;
   addButtonLabel: string;
   showBadges: boolean;
   showBrandModel: boolean;
   showSchedule: boolean;
   catalogSectionLabel: string;
+  newArrivalsLabel: string;
   emptyStateLabel: string;
-  accentStyle: 'rounded' | 'sharp';
+  cardStyle: CardStyle;
+  buttonRadius: ButtonRadius;
 }
 
-const DEFAULT_TEMPLATE: StoreTemplateConfig = {
-  ctaLabel: '💬 Escribir por WhatsApp',
-  addButtonLabel: 'Agregar',
-  showBadges: false,
-  showBrandModel: false,
-  showSchedule: false,
-  catalogSectionLabel: 'Catálogo',
-  emptyStateLabel: 'Esta tienda todavía no tiene productos.',
-  accentStyle: 'rounded',
-};
-
-export const STORE_TEMPLATES: Record<string, StoreTemplateConfig> = {
-  alimentos: {
-    ctaLabel: '🍽️ Pedir por WhatsApp',
-    addButtonLabel: 'Agregar al pedido',
-    showBadges: true,
-    showBrandModel: false,
-    showSchedule: true,
-    catalogSectionLabel: 'Menú',
-    emptyStateLabel: 'El menú todavía no tiene platillos cargados.',
-    accentStyle: 'rounded',
-  },
-  moda: {
-    ctaLabel: '💬 Preguntar disponibilidad',
+const ENGINES: Record<EngineKey, StoreEngine> = {
+  fashion: {
+    key: 'fashion',
+    engineName: 'Bizly Fashion',
+    ctaLabel: 'Preguntar disponibilidad',
     addButtonLabel: 'Agregar',
     showBadges: true,
     showBrandModel: false,
     showSchedule: false,
     catalogSectionLabel: 'Colección',
+    newArrivalsLabel: 'Nuevos lanzamientos',
     emptyStateLabel: 'Esta boutique todavía no tiene piezas cargadas.',
-    accentStyle: 'sharp',
+    cardStyle: 'fashion',
+    buttonRadius: 'md',
   },
-  tecnologia: {
-    ctaLabel: '💬 Consultar disponibilidad',
-    addButtonLabel: 'Agregar al carrito',
-    showBadges: true,
-    showBrandModel: true,
-    showSchedule: false,
-    catalogSectionLabel: 'Catálogo de equipos',
-    emptyStateLabel: 'Todavía no hay equipos publicados.',
-    accentStyle: 'sharp',
-  },
-  servicios: {
-    ctaLabel: '📋 Solicitar cotización',
-    addButtonLabel: 'Cotizar',
-    showBadges: false,
-    showBrandModel: false,
-    showSchedule: false,
-    catalogSectionLabel: 'Servicios',
-    emptyStateLabel: 'Todavía no hay servicios publicados.',
-    accentStyle: 'rounded',
-  },
-  belleza: {
-    ctaLabel: '💬 Agendar por WhatsApp',
-    addButtonLabel: 'Agregar',
+  food: {
+    key: 'food',
+    engineName: 'Bizly Food',
+    ctaLabel: 'Pedir por WhatsApp',
+    addButtonLabel: 'Agregar al pedido',
     showBadges: true,
     showBrandModel: false,
     showSchedule: true,
-    catalogSectionLabel: 'Servicios y productos',
+    catalogSectionLabel: 'Menú',
+    newArrivalsLabel: 'Recién agregado al menú',
+    emptyStateLabel: 'El menú todavía no tiene platillos cargados.',
+    cardStyle: 'food',
+    buttonRadius: 'full',
+  },
+  business: {
+    key: 'business',
+    engineName: 'Bizly Business',
+    ctaLabel: 'Solicitar cotización',
+    addButtonLabel: 'Cotizar',
+    showBadges: false,
+    showBrandModel: true,
+    showSchedule: false,
+    catalogSectionLabel: 'Catálogo',
+    newArrivalsLabel: 'Nuevos productos y servicios',
     emptyStateLabel: 'Todavía no hay productos o servicios publicados.',
-    accentStyle: 'rounded',
+    cardStyle: 'business',
+    buttonRadius: 'md',
   },
 };
 
-export function getStoreTemplate(business: Business): StoreTemplateConfig {
-  return STORE_TEMPLATES[business.category] || DEFAULT_TEMPLATE;
+const CATEGORY_TO_ENGINE: Record<string, EngineKey> = {
+  alimentos: 'food',
+  moda: 'fashion',
+  belleza: 'fashion',
+  tecnologia: 'business',
+  servicios: 'business',
+  hogar: 'business',
+  regalos: 'fashion',
+  artesanias: 'fashion',
+  educacion: 'business',
+  otros: 'business',
+};
+
+export function getStoreEngine(business: Business): StoreEngine {
+  const key = CATEGORY_TO_ENGINE[business.category] || 'business';
+  return ENGINES[key];
 }

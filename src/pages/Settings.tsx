@@ -9,6 +9,7 @@ import CoverUploader from '../components/CoverUploader';
 import LockedFeature from '../components/LockedFeature';
 import DashboardNav from '../components/DashboardNav';
 import { getPlanFeatures, PLAN_FEATURES, PLAN_ORDER } from '../config/plans';
+import { extractDominantColor } from '../utils/extractDominantColor';
 
 type SubTab = 'identidad' | 'informacion' | 'diseno' | 'plan';
 
@@ -26,6 +27,9 @@ export default function Settings() {
   const [name, setName] = useState('');
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
+  const [tagline, setTagline] = useState('');
+  const [aboutText, setAboutText] = useState('');
+  const [deliveryInfo, setDeliveryInfo] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
   const [location, setLocation] = useState('');
   const [schedule, setSchedule] = useState('');
@@ -34,12 +38,31 @@ export default function Settings() {
   const [facebook, setFacebook] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [extractingColor, setExtractingColor] = useState(false);
+  const [colorError, setColorError] = useState('');
+
+  async function suggestColorFromLogo() {
+    if (!business?.logoUrl) return;
+    setExtractingColor(true);
+    setColorError('');
+    try {
+      const color = await extractDominantColor(business.logoUrl);
+      setPrimaryColor(color);
+    } catch {
+      setColorError('No se pudo leer el color del logo. Elige uno manualmente.');
+    } finally {
+      setExtractingColor(false);
+    }
+  }
 
   useEffect(() => {
     if (!business) return;
     setName(business.name);
     setCategory(business.category);
     setDescription(business.description);
+    setTagline(business.tagline || '');
+    setAboutText(business.aboutText || '');
+    setDeliveryInfo(business.deliveryInfo || '');
     setWhatsapp(business.whatsapp);
     setLocation(business.location || '');
     setSchedule(business.schedule || '');
@@ -57,6 +80,9 @@ export default function Settings() {
       name,
       category,
       description,
+      tagline,
+      aboutText,
+      deliveryInfo,
       whatsapp,
       location,
       schedule,
@@ -158,12 +184,44 @@ export default function Settings() {
             </div>
 
             <div>
+              <label className="text-sm font-medium">Eslogan (opcional)</label>
+              <input
+                className="w-full mt-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-bizly-green"
+                value={tagline}
+                onChange={(e) => setTagline(e.target.value)}
+                placeholder="Ej. Sabor que enamora"
+                maxLength={60}
+              />
+            </div>
+
+            <div>
               <label className="text-sm font-medium">Descripción</label>
               <textarea
                 className="w-full mt-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-bizly-green"
                 rows={3}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Sobre nosotros (opcional)</label>
+              <textarea
+                className="w-full mt-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-bizly-green"
+                rows={4}
+                value={aboutText}
+                onChange={(e) => setAboutText(e.target.value)}
+                placeholder="Cuenta la historia de tu negocio — se muestra en una sección aparte de tu tienda pública."
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Información de entrega (opcional)</label>
+              <input
+                className="w-full mt-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-bizly-green"
+                value={deliveryInfo}
+                onChange={(e) => setDeliveryInfo(e.target.value)}
+                placeholder="Ej. Envío a domicilio en pedidos mayores a $500"
               />
             </div>
 
@@ -243,6 +301,17 @@ export default function Settings() {
                   Se usa en botones, precios y acentos de tu tienda pública.
                 </span>
               </div>
+              {business.logoUrl && (
+                <button
+                  type="button"
+                  onClick={suggestColorFromLogo}
+                  disabled={extractingColor}
+                  className="mt-2 text-xs text-bizly-green font-medium disabled:opacity-60"
+                >
+                  {extractingColor ? 'Analizando tu logo...' : '🎨 Sugerir color a partir de mi logo'}
+                </button>
+              )}
+              {colorError && <p className="text-xs text-red-600 mt-1">{colorError}</p>}
             </div>
 
             <div className="border rounded-xl p-4">

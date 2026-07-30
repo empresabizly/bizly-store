@@ -5,6 +5,9 @@ export interface Business {
   slug: string;
   category: string;
   description: string;
+  tagline?: string;
+  aboutText?: string;
+  deliveryInfo?: string;
   logoUrl?: string;
   logoCloudinaryId?: string;
   logoCreatedAt?: number;
