@@ -4,7 +4,7 @@ import { collection, query, where, getDocs, doc, setDoc, deleteDoc, updateDoc, d
 import { db } from '../firebase/config';
 import { useAuth } from '../context/AuthContext';
 import DashboardNav from '../components/DashboardNav';
-import { Category } from '../types';
+import { Category, Product } from '../types';
 import { validateImageFile, validateImageLoads, uploadToCloudinary, CloudinaryUploadResult } from '../cloudinary/upload';
 
 export default function Categories() {
@@ -15,6 +15,8 @@ export default function Categories() {
   const [newName, setNewName] = useState('');
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [expandedCategoryId, setExpandedCategoryId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !business) navigate('/onboarding');
@@ -29,9 +31,19 @@ export default function Categories() {
       list.sort((a, b) => a.createdAt - b.createdAt);
       setCategories(list);
       setLoadingCategories(false);
+
+      const prodQ = query(collection(db, 'products'), where('businessId', '==', business.id));
+      const prodSnap = await getDocs(prodQ);
+      setProducts(prodSnap.docs.map((d) => d.data() as Product));
     }
     load();
   }, [business]);
+
+  async function assignProductToCategory(productId: string, categoryName: string, assign: boolean) {
+    const newCategory = assign ? categoryName : '';
+    await updateDoc(doc(db, 'products', productId), { category: newCategory });
+    setProducts((prev) => prev.map((p) => (p.id === productId ? { ...p, category: newCategory } : p)));
+  }
 
   async function handleCreate() {
     if (!business || !newName.trim()) return;
@@ -131,6 +143,10 @@ export default function Categories() {
                 key={cat.id}
                 category={cat}
                 userId={user?.uid || ''}
+                products={products}
+                expanded={expandedCategoryId === cat.id}
+                onToggleExpanded={() => setExpandedCategoryId(expandedCategoryId === cat.id ? null : cat.id)}
+                onAssignProduct={(productId, assign) => assignProductToCategory(productId, cat.name, assign)}
                 onUploaded={(r) => handleImageUploaded(cat.id, r)}
                 onRemoved={() => handleImageRemoved(cat.id)}
                 onDelete={() => handleDelete(cat.id)}
@@ -146,12 +162,20 @@ export default function Categories() {
 function CategoryRow({
   category,
   userId,
+  products,
+  expanded,
+  onToggleExpanded,
+  onAssignProduct,
   onUploaded,
   onRemoved,
   onDelete,
 }: {
   category: Category;
   userId: string;
+  products: Product[];
+  expanded: boolean;
+  onToggleExpanded: () => void;
+  onAssignProduct: (productId: string, assign: boolean) => void;
   onUploaded: (result: CloudinaryUploadResult) => void;
   onRemoved: () => void;
   onDelete: () => void;
@@ -188,35 +212,72 @@ function CategoryRow({
     }
   }
 
+  const productCount = products.filter((p) => p.category === category.name).length;
+
   return (
-    <div className="bg-white rounded-xl shadow-sm p-4 flex items-center gap-4">
-      <div className="relative w-14 h-14 rounded-full bg-black/5 overflow-hidden shrink-0 flex items-center justify-center text-black/20 text-[10px]">
-        {uploading ? (
-          <span className="text-[9px] text-black/40">Subiendo...</span>
-        ) : category.imageUrl ? (
-          <img src={category.imageUrl} alt={category.name} className="w-full h-full object-cover" />
-        ) : (
-          '🏷️'
-        )}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="font-medium truncate">{category.name}</p>
-        <div className="flex gap-3 mt-1 text-xs">
-          <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFileSelect} className="hidden" id={`cat-file-${category.id}`} />
-          <label htmlFor={`cat-file-${category.id}`} className="text-bizly-green font-medium cursor-pointer">
-            {category.imageUrl ? 'Cambiar ícono' : 'Subir ícono'}
-          </label>
-          {category.imageUrl && (
-            <button onClick={onRemoved} className="text-black/40 font-medium">
-              Quitar ícono
-            </button>
+    <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div className="p-4 flex items-center gap-4">
+        <div className="relative w-14 h-14 rounded-full bg-black/5 overflow-hidden shrink-0 flex items-center justify-center text-black/20 text-[10px]">
+          {uploading ? (
+            <span className="text-[9px] text-black/40">Subiendo...</span>
+          ) : category.imageUrl ? (
+            <img src={category.imageUrl} alt={category.name} className="w-full h-full object-cover" />
+          ) : (
+            '🏷️'
           )}
         </div>
-        {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
+        <div className="flex-1 min-w-0">
+          <p className="font-medium truncate">{category.name}</p>
+          <p className="text-xs text-black/40">{productCount} producto{productCount !== 1 ? 's' : ''}</p>
+          <div className="flex gap-3 mt-1 text-xs">
+            <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFileSelect} className="hidden" id={`cat-file-${category.id}`} />
+            <label htmlFor={`cat-file-${category.id}`} className="text-bizly-green font-medium cursor-pointer">
+              {category.imageUrl ? 'Cambiar ícono' : 'Subir ícono'}
+            </label>
+            {category.imageUrl && (
+              <button onClick={onRemoved} className="text-black/40 font-medium">
+                Quitar ícono
+              </button>
+            )}
+            <button onClick={onToggleExpanded} className="text-black/40 font-medium">
+              {expanded ? 'Ocultar productos' : 'Gestionar productos'}
+            </button>
+          </div>
+          {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
+        </div>
+        <button onClick={onDelete} className="text-red-500 text-xs font-medium shrink-0">
+          Eliminar
+        </button>
       </div>
-      <button onClick={onDelete} className="text-red-500 text-xs font-medium shrink-0">
-        Eliminar
-      </button>
+
+      {expanded && (
+        <div className="border-t bg-black/[0.02] px-4 py-3">
+          {products.length === 0 ? (
+            <p className="text-xs text-black/40 py-2">
+              Todavía no tienes productos. Créalos primero desde la pestaña Productos.
+            </p>
+          ) : (
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {products.map((p) => {
+                const checked = p.category === category.name;
+                return (
+                  <label key={p.id} className="flex items-center gap-3 text-sm py-1">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(e) => onAssignProduct(p.id, e.target.checked)}
+                    />
+                    <span className="flex-1 truncate">{p.name}</span>
+                    {p.category && p.category !== category.name && (
+                      <span className="text-[10px] text-black/30 shrink-0">en "{p.category}"</span>
+                    )}
+                  </label>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

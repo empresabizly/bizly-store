@@ -217,64 +217,64 @@ export default function Store() {
       {/* Hero */}
       <div id="inicio" className="relative">
         {business.coverUrl ? (
-          <div className="w-full h-40 sm:h-64 bg-black/10">
+          <div className="w-full h-32 sm:h-56 bg-black/10">
             <img src={business.coverUrl} alt="Portada" className="w-full h-full object-cover" />
           </div>
         ) : (
-          <div className="w-full h-24 sm:h-32" style={{ background: `linear-gradient(135deg, ${accent}, #111)` }} />
+          <div className="w-full h-20 sm:h-28" style={{ background: `linear-gradient(135deg, ${accent}, #111)` }} />
         )}
 
         <div className="max-w-3xl mx-auto px-6">
-          <div className="bg-white rounded-3xl shadow-lg -mt-10 sm:-mt-14 px-6 py-8 flex flex-col items-center text-center relative z-10">
+          <div className="bg-white rounded-3xl shadow-lg -mt-8 sm:-mt-12 px-5 py-5 flex flex-col items-center text-center relative z-10">
             {business.logoUrl ? (
               <img
                 src={business.logoUrl}
                 alt={business.name}
-                className="w-20 h-20 rounded-full object-cover border-4 border-white shadow-md -mt-16 bg-white"
+                className="w-16 h-16 rounded-full object-cover border-4 border-white shadow-md -mt-12 bg-white"
               />
             ) : (
               <div
-                className="w-20 h-20 rounded-full border-4 border-white shadow-md -mt-16 text-white flex items-center justify-center font-heading text-2xl font-bold"
+                className="w-16 h-16 rounded-full border-4 border-white shadow-md -mt-12 text-white flex items-center justify-center font-heading text-xl font-bold"
                 style={{ backgroundColor: accent }}
               >
                 {business.name.charAt(0).toUpperCase()}
               </div>
             )}
 
-            <h1 className="font-heading text-2xl sm:text-3xl font-bold mt-3">{business.name}</h1>
+            <h1 className="font-heading text-2xl sm:text-3xl font-extrabold tracking-tight mt-2">{business.name}</h1>
             {business.tagline && (
-              <p className="text-sm font-medium mt-1" style={{ color: accent }}>
+              <p className="text-xs font-medium mt-0.5" style={{ color: accent }}>
                 {business.tagline}
               </p>
             )}
 
-            <div className="flex flex-wrap items-center justify-center gap-2 mt-2.5 text-xs">
+            <div className="flex flex-wrap items-center justify-center gap-1.5 mt-2 text-xs">
               {categoryLabel && (
                 <span
-                  className="px-3 py-1 rounded-full font-medium"
+                  className="px-2.5 py-0.5 rounded-full font-medium"
                   style={{ backgroundColor: `${accent}15`, color: accent }}
                 >
                   {categoryLabel}
                 </span>
               )}
               {business.location && (
-                <span className="px-3 py-1 rounded-full bg-black/5 text-black/50 font-medium">
+                <span className="px-2.5 py-0.5 rounded-full bg-black/5 text-black/50 font-medium">
                   📍 {business.location}
                 </span>
               )}
               {engine.showSchedule && business.schedule && (
-                <span className="px-3 py-1 rounded-full bg-black/5 text-black/50 font-medium">
+                <span className="px-2.5 py-0.5 rounded-full bg-black/5 text-black/50 font-medium">
                   🕒 {business.schedule}
                 </span>
               )}
             </div>
 
             {business.description && (
-              <p className="text-black/55 mt-3 max-w-md text-sm leading-relaxed">{business.description}</p>
+              <p className="text-black/55 mt-2 max-w-md text-xs leading-snug">{business.description}</p>
             )}
 
             {(business.socialLinks?.instagram || business.socialLinks?.facebook) && (
-              <div className="flex gap-4 mt-3 text-xs">
+              <div className="flex gap-3 mt-2 text-xs">
                 {business.socialLinks?.instagram && (
                   <a
                     href={`https://instagram.com/${business.socialLinks.instagram.replace('@', '')}`}
@@ -298,11 +298,29 @@ export default function Store() {
               target="_blank"
               rel="noreferrer"
               id="contacto"
-              className={`inline-flex items-center gap-2 mt-6 px-7 py-3 ${buttonRadiusClass} text-white text-sm font-semibold shadow-md hover:opacity-90 transition`}
+              className={`inline-flex items-center gap-2 mt-3 px-6 py-2.5 ${buttonRadiusClass} text-white text-sm font-semibold shadow-md hover:opacity-90 transition`}
               style={{ backgroundColor: accent }}
             >
               {engine.ctaLabel}
             </a>
+          </div>
+        </div>
+      </div>
+
+      {/* Barra de confianza — solo datos verdaderos de cómo funciona la plataforma */}
+      <div className="max-w-3xl mx-auto px-6 pt-4">
+        <div className="grid grid-cols-3 gap-2 text-center">
+          <div className="bg-white rounded-xl py-3 px-1 shadow-sm">
+            <p className="text-lg">💬</p>
+            <p className="text-[10px] text-black/50 font-medium mt-1 leading-tight">Pedido directo por WhatsApp</p>
+          </div>
+          <div className="bg-white rounded-xl py-3 px-1 shadow-sm">
+            <p className="text-lg">🤝</p>
+            <p className="text-[10px] text-black/50 font-medium mt-1 leading-tight">Trato directo, sin intermediarios</p>
+          </div>
+          <div className="bg-white rounded-xl py-3 px-1 shadow-sm">
+            <p className="text-lg">🔄</p>
+            <p className="text-[10px] text-black/50 font-medium mt-1 leading-tight">Catálogo siempre actualizado</p>
           </div>
         </div>
       </div>
@@ -342,7 +360,7 @@ export default function Store() {
       )}
 
       {/* Categorías visuales */}
-      {categories.length > 1 && (
+      {categories.length >= 1 && (
         <div className="max-w-3xl mx-auto px-6 pt-6">
           <p className="text-xs text-black/40 mb-2 font-medium">Explora por categoría</p>
           <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
@@ -456,7 +474,10 @@ export default function Store() {
             {showNewArrivals && (
               <section>
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-heading text-lg font-semibold">🆕 {engine.newArrivalsLabel}</h2>
+                  <h2 className="font-heading text-lg font-bold flex items-center gap-2">
+                    <span className="w-1.5 h-5 rounded-full" style={{ backgroundColor: accent }} />
+                    🆕 {engine.newArrivalsLabel}
+                  </h2>
                   <button
                     onClick={() => scrollTo('catalogo')}
                     className="text-xs font-medium"
@@ -496,7 +517,10 @@ export default function Store() {
 
             {featured.length > 0 && (
               <section>
-                <h2 className="font-heading text-lg font-semibold mb-4">⭐ Destacados</h2>
+                <h2 className="font-heading text-lg font-bold mb-4 flex items-center gap-2">
+                  <span className="w-1.5 h-5 rounded-full" style={{ backgroundColor: accent }} />
+                  ⭐ Destacados
+                </h2>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
                   {featured.map((p) => (
                     <ProductCard key={p.id} product={p} onAdd={addToCart} onOpenDetail={() => setSelectedProduct(p)} engine={engine} accent={accent} buttonRadiusClass={buttonRadiusClass} isFavorite={isFavorite(p.id)} onToggleFavorite={() => toggleFavorite(p.id)} highlight />
@@ -505,7 +529,10 @@ export default function Store() {
               </section>
             )}
             <section>
-              <h2 className="font-heading text-lg font-semibold mb-4">{engine.catalogSectionLabel}</h2>
+              <h2 className="font-heading text-lg font-bold mb-4 flex items-center gap-2">
+                <span className="w-1.5 h-5 rounded-full" style={{ backgroundColor: accent }} />
+                {engine.catalogSectionLabel}
+              </h2>
               {engine.key === 'business' && (
                 <div className="space-y-3">
                   {rest.map((p) => (
@@ -703,6 +730,18 @@ export default function Store() {
           onClose={() => setSelectedProduct(null)}
           onAdd={addToCart}
         />
+      )}
+
+      {/* Barra persistente de carrito (solo móvil, estilo apps de comida) */}
+      {cart.length > 0 && !cartOpen && (
+        <button
+          onClick={() => setCartOpen(true)}
+          className="fixed bottom-[68px] inset-x-4 z-40 sm:hidden rounded-full text-white text-sm font-semibold py-3 px-5 shadow-lg flex items-center justify-between"
+          style={{ backgroundColor: accent }}
+        >
+          <span>🛒 {cartCount} {cartCount === 1 ? 'producto' : 'productos'}</span>
+          <span>${total} MXN · Ver pedido →</span>
+        </button>
       )}
 
       {/* Navegación inferior estilo app (solo móvil) */}

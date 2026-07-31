@@ -272,6 +272,32 @@ Si todavía no has creado ninguna categoría, el campo de producto sigue
 aceptando texto libre (como antes) para no romper nada — en cuanto creas tu
 primera categoría desde el panel, el campo se convierte en un selector.
 
+## Correcciones de categorías y hero
+
+- **Bug corregido:** las categorías solo se mostraban en la tienda pública si
+  había 2 o más distintas en uso — con 1 sola categoría no aparecía nada. Ya
+  se muestra desde 1.
+- **Hero más compacto:** logo, textos y botón con menos espacio entre sí y
+  padding reducido en la tarjeta blanca — ocupa notablemente menos alto.
+- **Asignar productos a categorías desde la misma pantalla:** en Dashboard →
+  Categorías, cada categoría tiene un botón "Gestionar productos" que abre
+  una lista con checkboxes de todos tus productos — márcalos para asignarlos
+  a esa categoría al instante, sin entrar a editar cada producto por separado.
+
+## Estética de marca grande (Nike/Liverpool) y apps de comida (Uber Eats/McDonald's)
+
+- **Tipografía más audaz** en el nombre del negocio (más grande, extra bold, tracking ajustado).
+- **Barra de confianza** debajo del hero — con datos honestos de cómo
+  funciona la plataforma ("Pedido directo por WhatsApp", "Trato directo sin
+  intermediarios", "Catálogo siempre actualizado"). **No se agregaron
+  promesas que no podemos garantizar** (nada de "compra 100% segura" o
+  "envío gratis" — no hay pasarela de pago ni política de envío real todavía).
+- **Encabezados de sección con acento de color** (barrita vertical junto al
+  título), estilo tiendas departamentales.
+- **Barra de carrito persistente** en móvil, estilo Uber Eats/McDonald's: en
+  cuanto agregas algo, aparece flotando arriba del nav inferior con el total
+  y "Ver pedido →", siempre visible mientras sigues navegando el catálogo.
+
 ## Qué incluye este MVP
 
 - Registro / login (Firebase Auth)
