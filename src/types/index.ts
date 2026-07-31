@@ -22,6 +22,7 @@ export interface Business {
   location?: string;
   schedule?: string;
   primaryColor?: string;
+  templateEngine?: 'fashion' | 'food' | 'restaurant' | 'business';
   theme: 'minimalista'; // más temas se agregan después
   plan: 'gratis' | 'basico' | 'emprendedor' | 'negocio';
   createdAt: number;

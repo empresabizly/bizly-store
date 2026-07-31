@@ -43,6 +43,7 @@ export default function Store() {
   const [sendingOrder, setSendingOrder] = useState(false);
   const [orderError, setOrderError] = useState('');
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const { favorites, toggleFavorite, isFavorite } = useFavorites(business?.id || slug || 'tienda');
 
   useEffect(() => {
@@ -60,15 +61,18 @@ export default function Store() {
     load();
   }, [slug]);
 
-  function addToCart(product: Product) {
+  function addToCart(product: Product, quantity = 1) {
     setCart((prev) => {
       const existing = prev.find((i) => i.product.id === product.id);
       if (existing) {
-        return prev.map((i) => (i.product.id === product.id ? { ...i, quantity: i.quantity + 1 } : i));
+        return prev.map((i) =>
+          i.product.id === product.id ? { ...i, quantity: i.quantity + quantity } : i
+        );
       }
-      return [...prev, { product, quantity: 1 }];
+      return [...prev, { product, quantity }];
     });
     setCartOpen(true);
+    setSelectedProduct(null);
   }
 
   function updateQuantity(productId: string, delta: number) {
@@ -177,6 +181,7 @@ export default function Store() {
   const buttonRadiusClass = engine.buttonRadius === 'full' ? 'rounded-full' : 'rounded-lg';
   const newArrivals = [...products].sort((a, b) => b.createdAt - a.createdAt).slice(0, 4);
   const showNewArrivals = !activeCategory && !search.trim() && !showFavoritesOnly && sort === 'relevancia' && products.length >= 4;
+  const promotions = filteredProducts.filter((p) => p.badge === 'promocion');
 
   return (
     <div className="min-h-screen bg-bizly-cream pb-24">
@@ -436,8 +441,27 @@ export default function Store() {
                 <div className="flex gap-4 overflow-x-auto no-scrollbar pb-1">
                   {newArrivals.map((p) => (
                     <div key={p.id} className="w-40 shrink-0">
-                      <ProductCard product={p} onAdd={addToCart} engine={engine} accent={accent} buttonRadiusClass={buttonRadiusClass} isFavorite={isFavorite(p.id)} onToggleFavorite={() => toggleFavorite(p.id)} />
+                      <ProductCard product={p} onAdd={addToCart} onOpenDetail={() => setSelectedProduct(p)} engine={engine} accent={accent} buttonRadiusClass={buttonRadiusClass} isFavorite={isFavorite(p.id)} onToggleFavorite={() => toggleFavorite(p.id)} />
                     </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {promotions.length > 0 && (
+              <section>
+                <div
+                  className="rounded-2xl p-4 mb-4 flex items-center gap-2"
+                  style={{ backgroundColor: `${accent}12` }}
+                >
+                  <span className="text-xl">🏷️</span>
+                  <h2 className="font-heading text-lg font-semibold" style={{ color: accent }}>
+                    Promociones
+                  </h2>
+                </div>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {promotions.map((p) => (
+                    <ProductCard key={p.id} product={p} onAdd={addToCart} onOpenDetail={() => setSelectedProduct(p)} engine={engine} accent={accent} buttonRadiusClass={buttonRadiusClass} isFavorite={isFavorite(p.id)} onToggleFavorite={() => toggleFavorite(p.id)} highlight />
                   ))}
                 </div>
               </section>
@@ -448,18 +472,45 @@ export default function Store() {
                 <h2 className="font-heading text-lg font-semibold mb-4">⭐ Destacados</h2>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
                   {featured.map((p) => (
-                    <ProductCard key={p.id} product={p} onAdd={addToCart} engine={engine} accent={accent} buttonRadiusClass={buttonRadiusClass} isFavorite={isFavorite(p.id)} onToggleFavorite={() => toggleFavorite(p.id)} highlight />
+                    <ProductCard key={p.id} product={p} onAdd={addToCart} onOpenDetail={() => setSelectedProduct(p)} engine={engine} accent={accent} buttonRadiusClass={buttonRadiusClass} isFavorite={isFavorite(p.id)} onToggleFavorite={() => toggleFavorite(p.id)} highlight />
                   ))}
                 </div>
               </section>
             )}
             <section>
               <h2 className="font-heading text-lg font-semibold mb-4">{engine.catalogSectionLabel}</h2>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {rest.map((p) => (
-                  <ProductCard key={p.id} product={p} onAdd={addToCart} engine={engine} accent={accent} buttonRadiusClass={buttonRadiusClass} isFavorite={isFavorite(p.id)} onToggleFavorite={() => toggleFavorite(p.id)} />
-                ))}
-              </div>
+              {engine.key === 'business' && (
+                <div className="space-y-3">
+                  {rest.map((p) => (
+                    <ProductListRow key={p.id} product={p} onAdd={addToCart} onOpenDetail={() => setSelectedProduct(p)} engine={engine} accent={accent} buttonRadiusClass={buttonRadiusClass} isFavorite={isFavorite(p.id)} onToggleFavorite={() => toggleFavorite(p.id)} />
+                  ))}
+                </div>
+              )}
+              {engine.key === 'restaurant' && (
+                <div className="space-y-6">
+                  {(activeCategory ? [activeCategory] : categories.length > 0 ? categories : ['']).map((cat) => {
+                    const items = rest.filter((p) => (cat ? p.category === cat : !p.category));
+                    if (items.length === 0) return null;
+                    return (
+                      <div key={cat || 'sin-categoria'}>
+                        {cat && <h3 className="text-sm font-semibold text-black/70 mb-2">{cat}</h3>}
+                        <div className="space-y-3">
+                          {items.map((p) => (
+                            <RestaurantMenuRow key={p.id} product={p} onAdd={addToCart} onOpenDetail={() => setSelectedProduct(p)} engine={engine} accent={accent} isFavorite={isFavorite(p.id)} onToggleFavorite={() => toggleFavorite(p.id)} />
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              {engine.key !== 'business' && engine.key !== 'restaurant' && (
+                <div className={`grid gap-5 ${engine.key === 'fashion' ? 'grid-cols-2' : 'sm:grid-cols-2 lg:grid-cols-3'}`}>
+                  {rest.map((p) => (
+                    <ProductCard key={p.id} product={p} onAdd={addToCart} onOpenDetail={() => setSelectedProduct(p)} engine={engine} accent={accent} buttonRadiusClass={buttonRadiusClass} isFavorite={isFavorite(p.id)} onToggleFavorite={() => toggleFavorite(p.id)} />
+                  ))}
+                </div>
+              )}
             </section>
           </div>
         )}
@@ -560,6 +611,19 @@ export default function Store() {
         </div>
       )}
 
+      {selectedProduct && (
+        <ProductDetailModal
+          product={selectedProduct}
+          engine={engine}
+          accent={accent}
+          buttonRadiusClass={buttonRadiusClass}
+          isFavorite={isFavorite(selectedProduct.id)}
+          onToggleFavorite={() => toggleFavorite(selectedProduct.id)}
+          onClose={() => setSelectedProduct(null)}
+          onAdd={addToCart}
+        />
+      )}
+
       {/* Navegación inferior estilo app (solo móvil) */}
       <div className="fixed bottom-0 inset-x-0 z-40 bg-white border-t flex sm:hidden">
         <button onClick={() => scrollTo('inicio')} className="flex-1 py-3 text-center text-xs text-black/60">
@@ -619,6 +683,7 @@ export default function Store() {
 function ProductCard({
   product,
   onAdd,
+  onOpenDetail,
   engine,
   accent,
   buttonRadiusClass,
@@ -628,6 +693,7 @@ function ProductCard({
 }: {
   product: Product;
   onAdd: (p: Product) => void;
+  onOpenDetail: () => void;
   engine: ReturnType<typeof getStoreEngine>;
   accent: string;
   buttonRadiusClass: string;
@@ -654,7 +720,8 @@ function ProductCard({
   if (engine.cardStyle === 'food') {
     return (
       <div
-        className="relative rounded-2xl overflow-hidden shadow-sm transition hover:shadow-md hover:-translate-y-0.5 aspect-square"
+        onClick={onOpenDetail}
+        className="relative rounded-2xl overflow-hidden shadow-sm transition hover:shadow-md hover:-translate-y-0.5 aspect-square cursor-pointer"
         style={highlight ? { boxShadow: `0 0 0 2px ${accent}` } : undefined}
       >
         {product.imageUrl ? (
@@ -679,7 +746,10 @@ function ProductCard({
           <div className="flex items-center justify-between mt-1">
             <span className="font-bold text-sm">${product.price} MXN</span>
             <button
-              onClick={() => onAdd(product)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onAdd(product);
+              }}
               className="w-8 h-8 rounded-full flex items-center justify-center text-white text-lg font-bold shrink-0"
               style={{ backgroundColor: accent }}
               aria-label={engine.addButtonLabel}
@@ -695,7 +765,7 @@ function ProductCard({
   // Motor Fashion: tarjeta editorial, minimalista, imagen vertical, texto discreto
   if (engine.cardStyle === 'fashion') {
     return (
-      <div className="group">
+      <div className="group cursor-pointer" onClick={onOpenDetail}>
         <div className="relative aspect-[4/5] bg-black/5 overflow-hidden rounded-lg">
           {heartButton}
           {product.imageUrl ? (
@@ -719,7 +789,10 @@ function ProductCard({
             ${product.price} MXN
           </p>
           <button
-            onClick={() => onAdd(product)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onAdd(product);
+            }}
             className="mt-2 text-[11px] uppercase tracking-wide font-semibold border-b pb-0.5"
             style={{ borderColor: accent, color: accent }}
           >
@@ -733,7 +806,8 @@ function ProductCard({
   // Motor Business: tarjeta informativa, corporativa, con marca/modelo si aplica
   return (
     <div
-      className={`bg-white shadow-sm overflow-hidden transition hover:shadow-md ${buttonRadiusClass === 'rounded-full' ? 'rounded-2xl' : 'rounded-lg'}`}
+      onClick={onOpenDetail}
+      className={`bg-white shadow-sm overflow-hidden transition hover:shadow-md cursor-pointer ${buttonRadiusClass === 'rounded-full' ? 'rounded-2xl' : 'rounded-lg'}`}
       style={highlight ? { boxShadow: `0 0 0 1px ${accent}55` } : undefined}
     >
       <div className="relative aspect-square bg-black/5 flex items-center justify-center text-black/20 text-xs">
@@ -765,11 +839,281 @@ function ProductCard({
             ${product.price} MXN
           </span>
           <button
-            onClick={() => onAdd(product)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onAdd(product);
+            }}
             className={`px-3 py-1.5 ${buttonRadiusClass} bg-bizly-dark text-white text-xs font-medium`}
           >
             {engine.addButtonLabel}
           </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Layout de lista (no cuadrícula) para el motor Business — se siente más
+ * como un directorio de servicios/catálogo corporativo que como tienda de
+ * productos físicos.
+ */
+function ProductListRow({
+  product,
+  onAdd,
+  onOpenDetail,
+  engine,
+  accent,
+  buttonRadiusClass,
+  isFavorite = false,
+  onToggleFavorite,
+}: {
+  product: Product;
+  onAdd: (p: Product) => void;
+  onOpenDetail: () => void;
+  engine: ReturnType<typeof getStoreEngine>;
+  accent: string;
+  buttonRadiusClass: string;
+  isFavorite?: boolean;
+  onToggleFavorite?: () => void;
+}) {
+  const badgeLabel = engine.showBadges && product.badge ? PRODUCT_BADGE_LABELS[product.badge] : null;
+  return (
+    <div
+      onClick={onOpenDetail}
+      className="bg-white rounded-xl shadow-sm p-4 flex items-center gap-4 cursor-pointer hover:shadow-md transition"
+    >
+      <div className="relative w-20 h-20 rounded-lg bg-black/5 overflow-hidden shrink-0 flex items-center justify-center text-black/20 text-[10px]">
+        {product.imageUrl ? (
+          <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+        ) : (
+          'Sin imagen'
+        )}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <p className="font-medium truncate">{product.name}</p>
+          {(badgeLabel || product.featured) && (
+            <span
+              className="text-[10px] font-semibold px-2 py-0.5 rounded-full text-white shrink-0"
+              style={{ backgroundColor: accent }}
+            >
+              {badgeLabel || 'Destacado'}
+            </span>
+          )}
+        </div>
+        {engine.showBrandModel && (product.brand || product.model) && (
+          <p className="text-xs text-black/40">{[product.brand, product.model].filter(Boolean).join(' · ')}</p>
+        )}
+        {product.description && <p className="text-xs text-black/50 mt-0.5 line-clamp-1">{product.description}</p>}
+        <p className="font-semibold text-sm mt-1" style={{ color: accent }}>
+          ${product.price} MXN
+        </p>
+      </div>
+      <div className="flex flex-col items-center gap-2 shrink-0">
+        {onToggleFavorite && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleFavorite();
+            }}
+            className="text-lg"
+            aria-label="Favorito"
+          >
+            {isFavorite ? '❤️' : '🤍'}
+          </button>
+        )}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onAdd(product);
+          }}
+          className={`px-3 py-1.5 ${buttonRadiusClass} bg-bizly-dark text-white text-xs font-medium whitespace-nowrap`}
+        >
+          {engine.addButtonLabel}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Fila de menú estilo Uber Eats / Rappi: información a la izquierda, foto
+ * pequeña a la derecha con el botón "+" superpuesto en su esquina.
+ */
+function RestaurantMenuRow({
+  product,
+  onAdd,
+  onOpenDetail,
+  engine,
+  accent,
+  isFavorite = false,
+  onToggleFavorite,
+}: {
+  product: Product;
+  onAdd: (p: Product) => void;
+  onOpenDetail: () => void;
+  engine: ReturnType<typeof getStoreEngine>;
+  accent: string;
+  isFavorite?: boolean;
+  onToggleFavorite?: () => void;
+}) {
+  const badgeLabel = engine.showBadges && product.badge ? PRODUCT_BADGE_LABELS[product.badge] : null;
+  return (
+    <div
+      onClick={onOpenDetail}
+      className="bg-white rounded-2xl shadow-sm p-3 flex items-center gap-3 cursor-pointer hover:shadow-md transition"
+    >
+      <div className="flex-1 min-w-0">
+        {(badgeLabel || product.featured) && (
+          <span className="text-[10px] font-semibold" style={{ color: accent }}>
+            {badgeLabel || 'Destacado'}
+          </span>
+        )}
+        <p className="font-semibold text-sm truncate">{product.name}</p>
+        {product.description && (
+          <p className="text-xs text-black/45 mt-0.5 line-clamp-2">{product.description}</p>
+        )}
+        <p className="font-bold text-sm mt-1.5">${product.price} MXN</p>
+      </div>
+
+      <div className="relative w-24 h-24 rounded-xl bg-black/5 overflow-hidden shrink-0">
+        {product.imageUrl ? (
+          <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-black/20 text-[10px]">Sin foto</div>
+        )}
+        {onToggleFavorite && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleFavorite();
+            }}
+            className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-white/90 shadow-sm flex items-center justify-center text-xs"
+            aria-label="Favorito"
+          >
+            {isFavorite ? '❤️' : '🤍'}
+          </button>
+        )}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onAdd(product);
+          }}
+          className="absolute bottom-1.5 right-1.5 w-7 h-7 rounded-full flex items-center justify-center text-white text-base font-bold shadow-sm"
+          style={{ backgroundColor: accent }}
+          aria-label={engine.addButtonLabel}
+        >
+          +
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Página de detalle de producto — lo que más aleja a Bizly Store de sentirse
+ * como un "menú" y lo acerca a un ecommerce real: foto grande, información
+ * completa, selector de cantidad, y agregar desde ahí.
+ */
+function ProductDetailModal({
+  product,
+  engine,
+  accent,
+  buttonRadiusClass,
+  isFavorite,
+  onToggleFavorite,
+  onClose,
+  onAdd,
+}: {
+  product: Product;
+  engine: ReturnType<typeof getStoreEngine>;
+  accent: string;
+  buttonRadiusClass: string;
+  isFavorite: boolean;
+  onToggleFavorite: () => void;
+  onClose: () => void;
+  onAdd: (p: Product, quantity: number) => void;
+}) {
+  const [quantity, setQuantity] = useState(1);
+  const badgeLabel = engine.showBadges && product.badge ? PRODUCT_BADGE_LABELS[product.badge] : null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="relative bg-white w-full sm:max-w-lg sm:rounded-3xl rounded-t-3xl max-h-[90vh] overflow-y-auto shadow-xl">
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center text-lg z-10"
+        >
+          ×
+        </button>
+        <button
+          onClick={onToggleFavorite}
+          className="absolute top-3 left-3 w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center text-sm z-10"
+        >
+          {isFavorite ? '❤️' : '🤍'}
+        </button>
+
+        <div className="aspect-square bg-black/5">
+          {product.imageUrl ? (
+            <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-black/20 text-sm">Sin imagen</div>
+          )}
+        </div>
+
+        <div className="p-6">
+          {badgeLabel && (
+            <span
+              className="inline-block text-[10px] font-semibold px-2 py-1 rounded-full text-white mb-2"
+              style={{ backgroundColor: accent }}
+            >
+              {badgeLabel}
+            </span>
+          )}
+          <h2 className="font-heading text-xl font-bold">{product.name}</h2>
+          {engine.showBrandModel && (product.brand || product.model) && (
+            <p className="text-sm text-black/40 mt-0.5">
+              {[product.brand, product.model].filter(Boolean).join(' · ')}
+            </p>
+          )}
+          <p className="font-bold text-2xl mt-2" style={{ color: accent }}>
+            ${product.price} MXN
+          </p>
+          {product.description && (
+            <p className="text-sm text-black/60 leading-relaxed mt-3">{product.description}</p>
+          )}
+          {product.stock !== undefined && (
+            <p className="text-xs text-black/40 mt-2">
+              {product.stock > 0 ? `${product.stock} disponibles` : 'Sin stock'}
+            </p>
+          )}
+
+          <div className="flex items-center gap-4 mt-6">
+            <div className="flex items-center border rounded-full">
+              <button
+                onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                className="w-9 h-9 flex items-center justify-center text-lg"
+              >
+                −
+              </button>
+              <span className="w-8 text-center text-sm font-medium">{quantity}</span>
+              <button
+                onClick={() => setQuantity((q) => q + 1)}
+                className="w-9 h-9 flex items-center justify-center text-lg"
+              >
+                +
+              </button>
+            </div>
+            <button
+              onClick={() => onAdd(product, quantity)}
+              className={`flex-1 py-3 ${buttonRadiusClass} text-white text-sm font-semibold`}
+              style={{ backgroundColor: accent }}
+            >
+              {engine.addButtonLabel} · ${product.price * quantity} MXN
+            </button>
+          </div>
         </div>
       </div>
     </div>

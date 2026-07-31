@@ -226,6 +226,36 @@ con calificación), ahí sí tendría sentido.
 - **Feed en vivo de Instagram** — se muestra el enlace a tu Instagram, pero
   no se traen fotos reales de tu cuenta (requeriría integración con la API de Meta).
 
+## Página de detalle de producto, Promociones, y layouts distintos por motor
+
+- **Página de detalle** (nuevo): tocar cualquier producto abre una vista
+  completa con foto grande, descripción, marca/modelo si aplica, selector de
+  cantidad, y botón de agregar — esto es lo que más aleja a Bizly Store de
+  sentirse como un "menú" y lo acerca a un ecommerce real tipo Shopify.
+- **Sección de Promociones**: los productos con la etiqueta "Promoción" ahora
+  tienen su propia sección destacada con banner de color, separada de
+  Destacados y del catálogo general.
+- **Layouts realmente distintos por motor** (no solo tarjetas distintas):
+  - Bizly Business ahora muestra su catálogo como **lista** (imagen + info +
+    botón en fila), como un directorio de servicios, no como cuadrícula de productos físicos.
+  - Bizly Fashion usa cuadrícula de **2 columnas fijas** (más espacio por
+    producto, sensación editorial/boutique).
+  - Bizly Food se mantiene en cuadrícula de fotos grandes.
+
+## Bizly Restaurante (nuevo 4to motor) + elegir plantilla manualmente
+
+Se agregó **Bizly Restaurante**, con menú en formato lista (como Uber Eats /
+Rappi): fotos pequeñas a la derecha con el botón "+" superpuesto, precio
+prominente, y los platillos agrupados por categoría con encabezados de sección.
+
+Como "Alimentos y restaurantes" es una sola categoría que cubre tanto
+panaderías (mejor con Bizly Food, fotos grandes) como restaurantes con menú
+extenso (mejor con Bizly Restaurante, lista), ahora en **Configuración →
+Diseño** hay un selector de **"Plantilla de tienda"**: por default es
+automático según la categoría, pero cada negocio puede forzar cualquiera de
+los 4 motores manualmente (Bizly Fashion, Food, Restaurante o Business),
+sin importar su categoría.
+
 ## Qué incluye este MVP
 
 - Registro / login (Firebase Auth)

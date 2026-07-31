@@ -13,8 +13,8 @@
  */
 import { Business } from '../types';
 
-export type EngineKey = 'fashion' | 'food' | 'business';
-export type CardStyle = 'fashion' | 'food' | 'business';
+export type EngineKey = 'fashion' | 'food' | 'restaurant' | 'business';
+export type CardStyle = 'fashion' | 'food' | 'restaurant' | 'business';
 export type ButtonRadius = 'full' | 'md';
 
 export interface StoreEngine {
@@ -61,6 +61,20 @@ const ENGINES: Record<EngineKey, StoreEngine> = {
     cardStyle: 'food',
     buttonRadius: 'full',
   },
+  restaurant: {
+    key: 'restaurant',
+    engineName: 'Bizly Restaurante',
+    ctaLabel: 'Ver menú',
+    addButtonLabel: 'Agregar',
+    showBadges: true,
+    showBrandModel: false,
+    showSchedule: true,
+    catalogSectionLabel: 'Menú',
+    newArrivalsLabel: 'Nuevo en el menú',
+    emptyStateLabel: 'El menú todavía no tiene platillos cargados.',
+    cardStyle: 'restaurant',
+    buttonRadius: 'full',
+  },
   business: {
     key: 'business',
     engineName: 'Bizly Business',
@@ -90,7 +104,13 @@ const CATEGORY_TO_ENGINE: Record<string, EngineKey> = {
   otros: 'business',
 };
 
+export const ALL_ENGINES = ENGINES;
+
 export function getStoreEngine(business: Business): StoreEngine {
+  // Si el negocio eligió una plantilla manualmente, esa gana siempre.
+  if (business.templateEngine && ENGINES[business.templateEngine]) {
+    return ENGINES[business.templateEngine];
+  }
   const key = CATEGORY_TO_ENGINE[business.category] || 'business';
   return ENGINES[key];
 }

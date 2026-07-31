@@ -10,6 +10,7 @@ import LockedFeature from '../components/LockedFeature';
 import DashboardNav from '../components/DashboardNav';
 import { getPlanFeatures, PLAN_FEATURES, PLAN_ORDER } from '../config/plans';
 import { extractDominantColor } from '../utils/extractDominantColor';
+import { ALL_ENGINES, EngineKey } from '../config/storeTemplates';
 
 type SubTab = 'identidad' | 'informacion' | 'diseno' | 'plan';
 
@@ -34,6 +35,7 @@ export default function Settings() {
   const [location, setLocation] = useState('');
   const [schedule, setSchedule] = useState('');
   const [primaryColor, setPrimaryColor] = useState('#2E8B00');
+  const [templateEngine, setTemplateEngine] = useState<EngineKey | ''>('');
   const [instagram, setInstagram] = useState('');
   const [facebook, setFacebook] = useState('');
   const [saving, setSaving] = useState(false);
@@ -67,6 +69,7 @@ export default function Settings() {
     setLocation(business.location || '');
     setSchedule(business.schedule || '');
     setPrimaryColor(business.primaryColor || '#2E8B00');
+    setTemplateEngine(business.templateEngine || '');
     setInstagram(business.socialLinks?.instagram || '');
     setFacebook(business.socialLinks?.facebook || '');
   }, [business]);
@@ -87,6 +90,7 @@ export default function Settings() {
       location,
       schedule,
       primaryColor,
+      templateEngine: templateEngine || null,
       socialLinks: { instagram, facebook },
     });
     await refreshBusiness();
@@ -312,6 +316,27 @@ export default function Settings() {
                 </button>
               )}
               {colorError && <p className="text-xs text-red-600 mt-1">{colorError}</p>}
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Plantilla de tienda</label>
+              <select
+                value={templateEngine}
+                onChange={(e) => setTemplateEngine(e.target.value as EngineKey | '')}
+                className="w-full mt-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-bizly-green bg-white"
+              >
+                <option value="">Automático (según tu categoría)</option>
+                {Object.values(ALL_ENGINES).map((e) => (
+                  <option key={e.key} value={e.key}>
+                    {e.engineName}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-black/30 mt-1">
+                Por ejemplo, "Alimentos y restaurantes" usa Bizly Food (fotos grandes) por
+                default, pero si tienes un restaurante con menú extenso, Bizly Restaurante
+                (estilo lista, como Uber Eats) puede quedarte mejor.
+              </p>
             </div>
 
             <div className="border rounded-xl p-4">
