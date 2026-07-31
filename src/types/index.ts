@@ -23,6 +23,8 @@ export interface Business {
   schedule?: string;
   primaryColor?: string;
   templateEngine?: 'fashion' | 'food' | 'restaurant' | 'business';
+  sectionOrder?: string[];
+  hiddenSections?: string[];
   theme: 'minimalista'; // más temas se agregan después
   plan: 'gratis' | 'basico' | 'emprendedor' | 'negocio';
   createdAt: number;
@@ -70,6 +72,28 @@ export interface Category {
   createdAt: number;
 }
 
+export interface AnalyticsEvent {
+  id: string;
+  businessId: string;
+  type: 'store_view' | 'product_view';
+  productId?: string;
+  createdAt: number;
+}
+
+export interface Coupon {
+  id: string;
+  businessId: string;
+  code: string;
+  type: 'percentage' | 'fixed';
+  value: number;
+  minOrderAmount?: number;
+  expiresAt?: number;
+  usageLimit?: number;
+  usageCount: number;
+  active: boolean;
+  createdAt: number;
+}
+
 export interface OrderItem {
   productId: string;
   name: string;
@@ -88,6 +112,8 @@ export interface Order {
   customerPhone?: string;
   status: OrderStatus;
   createdAt: number;
+  couponCode?: string;
+  discountAmount?: number;
 }
 
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {

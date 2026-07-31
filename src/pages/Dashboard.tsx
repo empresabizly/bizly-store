@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { Product } from '../types';
 import { getPlanFeatures } from '../config/plans';
 import DashboardNav from '../components/DashboardNav';
+import { deleteCloudinaryImage } from '../cloudinary/deleteImage';
 
 export default function Dashboard() {
   const { user, business, logout, loading: authLoading } = useAuth();
@@ -34,8 +35,10 @@ export default function Dashboard() {
 
   async function handleDelete(productId: string) {
     if (!confirm('¿Eliminar este producto?')) return;
+    const product = products.find((p) => p.id === productId);
     await deleteDoc(doc(db, 'products', productId));
     setProducts((prev) => prev.filter((p) => p.id !== productId));
+    deleteCloudinaryImage(product?.imageCloudinaryId);
   }
 
   async function toggleAvailable(product: Product) {

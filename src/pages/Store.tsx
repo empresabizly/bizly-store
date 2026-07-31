@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { collection, query, where, getDocs, addDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { getBusinessBySlug } from '../context/AuthContext';
 import {
@@ -11,9 +11,10 @@ import {
   OrderItem,
   PRODUCT_BADGE_LABELS,
   Category,
+  Coupon,
 } from '../types';
 import { getPlanFeatures } from '../config/plans';
-import { getStoreEngine } from '../config/storeTemplates';
+import { getStoreEngine, getSectionOrder } from '../config/storeTemplates';
 import { useFavorites } from '../utils/useFavorites';
 
 type SortOption = 'relevancia' | 'precio_asc' | 'precio_desc' | 'nuevo';
@@ -46,6 +47,10 @@ export default function Store() {
   const [orderError, setOrderError] = useState('');
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [couponInput, setCouponInput] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
+  const [couponError, setCouponError] = useState('');
+  const [checkingCoupon, setCheckingCoupon] = useState(false);
   const { favorites, toggleFavorite, isFavorite } = useFavorites(business?.id || slug || 'tienda');
 
   useEffect(() => {
@@ -61,11 +66,30 @@ export default function Store() {
         const catQ = query(collection(db, 'categories'), where('businessId', '==', b.id));
         const catSnap = await getDocs(catQ);
         setBusinessCategories(catSnap.docs.map((d) => d.data() as Category));
+
+        // Registro de visita, silencioso (si falla, no afecta la experiencia del cliente).
+        addDoc(collection(db, 'events'), {
+          businessId: b.id,
+          type: 'store_view',
+          createdAt: Date.now(),
+        }).catch(() => {});
       }
       setLoading(false);
     }
     load();
   }, [slug]);
+
+  function openProductDetail(product: Product) {
+    setSelectedProduct(product);
+    if (business) {
+      addDoc(collection(db, 'events'), {
+        businessId: business.id,
+        type: 'product_view',
+        productId: product.id,
+        createdAt: Date.now(),
+      }).catch(() => {});
+    }
+  }
 
   function addToCart(product: Product, quantity = 1) {
     setCart((prev) => {
@@ -89,8 +113,57 @@ export default function Store() {
     );
   }
 
-  const total = cart.reduce((sum, i) => sum + i.product.price * i.quantity, 0);
+  const subtotal = cart.reduce((sum, i) => sum + i.product.price * i.quantity, 0);
+  const discountAmount = appliedCoupon
+    ? appliedCoupon.type === 'percentage'
+      ? Math.round((subtotal * appliedCoupon.value) / 100)
+      : Math.min(appliedCoupon.value, subtotal)
+    : 0;
+  const total = Math.max(0, subtotal - discountAmount);
   const cartCount = cart.reduce((n, i) => n + i.quantity, 0);
+
+  async function applyCoupon() {
+    if (!business || !couponInput.trim()) return;
+    setCouponError('');
+    setCheckingCoupon(true);
+    const normalizedCode = couponInput.trim().toUpperCase();
+
+    try {
+      const q = query(
+        collection(db, 'coupons'),
+        where('businessId', '==', business.id),
+        where('code', '==', normalizedCode)
+      );
+      const snap = await getDocs(q);
+      if (snap.empty) {
+        setCouponError('Ese código no existe.');
+        setCheckingCoupon(false);
+        return;
+      }
+      const found = snap.docs[0].data() as Coupon;
+
+      if (!found.active) {
+        setCouponError('Este cupón ya no está activo.');
+      } else if (found.expiresAt && found.expiresAt < Date.now()) {
+        setCouponError('Este cupón ya expiró.');
+      } else if (found.usageLimit !== undefined && found.usageCount >= found.usageLimit) {
+        setCouponError('Este cupón ya alcanzó su límite de usos.');
+      } else if (found.minOrderAmount && subtotal < found.minOrderAmount) {
+        setCouponError(`Este cupón requiere una compra mínima de $${found.minOrderAmount} MXN.`);
+      } else {
+        setAppliedCoupon(found);
+        setCouponInput('');
+      }
+    } catch {
+      setCouponError('No se pudo validar el cupón. Intenta de nuevo.');
+    }
+    setCheckingCoupon(false);
+  }
+
+  function removeCoupon() {
+    setAppliedCoupon(null);
+    setCouponError('');
+  }
 
   async function sendOrder() {
     if (!business || cart.length === 0) return;
@@ -117,7 +190,13 @@ export default function Store() {
         customerPhone: customerPhone.trim() || null,
         status: 'nuevo',
         createdAt: Date.now(),
+        ...(appliedCoupon ? { couponCode: appliedCoupon.code, discountAmount } : {}),
       });
+      if (appliedCoupon) {
+        await updateDoc(doc(db, 'coupons', appliedCoupon.id), { usageCount: appliedCoupon.usageCount + 1 }).catch(
+          () => {}
+        );
+      }
     } catch {
       // Si falla el guardado, igual dejamos que el pedido se mande por WhatsApp.
     }
@@ -128,6 +207,8 @@ export default function Store() {
       '',
       ...lines,
       '',
+      `Subtotal: $${subtotal} MXN`,
+      ...(appliedCoupon ? [`Cupón ${appliedCoupon.code}: -$${discountAmount} MXN`] : []),
       `Total: $${total} MXN`,
       '',
       'Gracias.',
@@ -135,6 +216,7 @@ export default function Store() {
     const url = `https://wa.me/${business.whatsapp}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
     setSendingOrder(false);
+    setAppliedCoupon(null);
   }
 
   const categories = useMemo(
@@ -188,6 +270,8 @@ export default function Store() {
   const rest = filteredProducts.filter((p) => !p.featured);
   const showBranding = !getPlanFeatures(business).removeBranding;
   const engine = getStoreEngine(business);
+  const sectionOrder = getSectionOrder(business);
+  const hiddenSections = business.hiddenSections || [];
   const buttonRadiusClass = engine.buttonRadius === 'full' ? 'rounded-full' : 'rounded-lg';
   const newArrivals = [...products].sort((a, b) => b.createdAt - a.createdAt).slice(0, 4);
   const showNewArrivals = !activeCategory && !search.trim() && !showFavoritesOnly && sort === 'relevancia' && products.length >= 4;
@@ -303,24 +387,6 @@ export default function Store() {
             >
               {engine.ctaLabel}
             </a>
-          </div>
-        </div>
-      </div>
-
-      {/* Barra de confianza — solo datos verdaderos de cómo funciona la plataforma */}
-      <div className="max-w-3xl mx-auto px-6 pt-4">
-        <div className="grid grid-cols-3 gap-2 text-center">
-          <div className="bg-white rounded-xl py-3 px-1 shadow-sm">
-            <p className="text-lg">💬</p>
-            <p className="text-[10px] text-black/50 font-medium mt-1 leading-tight">Pedido directo por WhatsApp</p>
-          </div>
-          <div className="bg-white rounded-xl py-3 px-1 shadow-sm">
-            <p className="text-lg">🤝</p>
-            <p className="text-[10px] text-black/50 font-medium mt-1 leading-tight">Trato directo, sin intermediarios</p>
-          </div>
-          <div className="bg-white rounded-xl py-3 px-1 shadow-sm">
-            <p className="text-lg">🔄</p>
-            <p className="text-[10px] text-black/50 font-medium mt-1 leading-tight">Catálogo siempre actualizado</p>
           </div>
         </div>
       </div>
@@ -471,101 +537,118 @@ export default function Store() {
           </p>
         ) : (
           <div className="space-y-10">
-            {showNewArrivals && (
-              <section>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-heading text-lg font-bold flex items-center gap-2">
-                    <span className="w-1.5 h-5 rounded-full" style={{ backgroundColor: accent }} />
-                    🆕 {engine.newArrivalsLabel}
-                  </h2>
-                  <button
-                    onClick={() => scrollTo('catalogo')}
-                    className="text-xs font-medium"
-                    style={{ color: accent }}
-                  >
-                    Ver todo
-                  </button>
-                </div>
-                <div className="flex gap-4 overflow-x-auto no-scrollbar pb-1">
-                  {newArrivals.map((p) => (
-                    <div key={p.id} className="w-40 shrink-0">
-                      <ProductCard product={p} onAdd={addToCart} onOpenDetail={() => setSelectedProduct(p)} engine={engine} accent={accent} buttonRadiusClass={buttonRadiusClass} isFavorite={isFavorite(p.id)} onToggleFavorite={() => toggleFavorite(p.id)} />
+            {sectionOrder.map((key) => {
+              if (hiddenSections.includes(key) && key !== 'catalogo') return null;
+
+              if (key === 'nuevos_lanzamientos' && showNewArrivals) {
+                return (
+                  <section key={key}>
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="font-heading text-lg font-bold flex items-center gap-2">
+                        <span className="w-1.5 h-5 rounded-full" style={{ backgroundColor: accent }} />
+                        🆕 {engine.newArrivalsLabel}
+                      </h2>
+                      <button
+                        onClick={() => scrollTo('catalogo')}
+                        className="text-xs font-medium"
+                        style={{ color: accent }}
+                      >
+                        Ver todo
+                      </button>
                     </div>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {promotions.length > 0 && (
-              <section>
-                <div
-                  className="rounded-2xl p-4 mb-4 flex items-center gap-2"
-                  style={{ backgroundColor: `${accent}12` }}
-                >
-                  <span className="text-xl">🏷️</span>
-                  <h2 className="font-heading text-lg font-semibold" style={{ color: accent }}>
-                    Promociones
-                  </h2>
-                </div>
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                  {promotions.map((p) => (
-                    <ProductCard key={p.id} product={p} onAdd={addToCart} onOpenDetail={() => setSelectedProduct(p)} engine={engine} accent={accent} buttonRadiusClass={buttonRadiusClass} isFavorite={isFavorite(p.id)} onToggleFavorite={() => toggleFavorite(p.id)} highlight />
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {featured.length > 0 && (
-              <section>
-                <h2 className="font-heading text-lg font-bold mb-4 flex items-center gap-2">
-                  <span className="w-1.5 h-5 rounded-full" style={{ backgroundColor: accent }} />
-                  ⭐ Destacados
-                </h2>
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                  {featured.map((p) => (
-                    <ProductCard key={p.id} product={p} onAdd={addToCart} onOpenDetail={() => setSelectedProduct(p)} engine={engine} accent={accent} buttonRadiusClass={buttonRadiusClass} isFavorite={isFavorite(p.id)} onToggleFavorite={() => toggleFavorite(p.id)} highlight />
-                  ))}
-                </div>
-              </section>
-            )}
-            <section>
-              <h2 className="font-heading text-lg font-bold mb-4 flex items-center gap-2">
-                <span className="w-1.5 h-5 rounded-full" style={{ backgroundColor: accent }} />
-                {engine.catalogSectionLabel}
-              </h2>
-              {engine.key === 'business' && (
-                <div className="space-y-3">
-                  {rest.map((p) => (
-                    <ProductListRow key={p.id} product={p} onAdd={addToCart} onOpenDetail={() => setSelectedProduct(p)} engine={engine} accent={accent} buttonRadiusClass={buttonRadiusClass} isFavorite={isFavorite(p.id)} onToggleFavorite={() => toggleFavorite(p.id)} />
-                  ))}
-                </div>
-              )}
-              {engine.key === 'restaurant' && (
-                <div className="space-y-6">
-                  {(activeCategory ? [activeCategory] : categories.length > 0 ? categories : ['']).map((cat) => {
-                    const items = rest.filter((p) => (cat ? p.category === cat : !p.category));
-                    if (items.length === 0) return null;
-                    return (
-                      <div key={cat || 'sin-categoria'}>
-                        {cat && <h3 className="text-sm font-semibold text-black/70 mb-2">{cat}</h3>}
-                        <div className="space-y-3">
-                          {items.map((p) => (
-                            <RestaurantMenuRow key={p.id} product={p} onAdd={addToCart} onOpenDetail={() => setSelectedProduct(p)} engine={engine} accent={accent} isFavorite={isFavorite(p.id)} onToggleFavorite={() => toggleFavorite(p.id)} />
-                          ))}
+                    <div className="flex gap-4 overflow-x-auto no-scrollbar pb-1">
+                      {newArrivals.map((p) => (
+                        <div key={p.id} className="w-40 shrink-0">
+                          <ProductCard product={p} onAdd={addToCart} onOpenDetail={() => openProductDetail(p)} engine={engine} accent={accent} buttonRadiusClass={buttonRadiusClass} isFavorite={isFavorite(p.id)} onToggleFavorite={() => toggleFavorite(p.id)} />
                         </div>
+                      ))}
+                    </div>
+                  </section>
+                );
+              }
+
+              if (key === 'promociones' && promotions.length > 0) {
+                return (
+                  <section key={key}>
+                    <div
+                      className="rounded-2xl p-4 mb-4 flex items-center gap-2"
+                      style={{ backgroundColor: `${accent}12` }}
+                    >
+                      <span className="text-xl">🏷️</span>
+                      <h2 className="font-heading text-lg font-semibold" style={{ color: accent }}>
+                        Promociones
+                      </h2>
+                    </div>
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                      {promotions.map((p) => (
+                        <ProductCard key={p.id} product={p} onAdd={addToCart} onOpenDetail={() => openProductDetail(p)} engine={engine} accent={accent} buttonRadiusClass={buttonRadiusClass} isFavorite={isFavorite(p.id)} onToggleFavorite={() => toggleFavorite(p.id)} highlight />
+                      ))}
+                    </div>
+                  </section>
+                );
+              }
+
+              if (key === 'destacados' && featured.length > 0) {
+                return (
+                  <section key={key}>
+                    <h2 className="font-heading text-lg font-bold mb-4 flex items-center gap-2">
+                      <span className="w-1.5 h-5 rounded-full" style={{ backgroundColor: accent }} />
+                      ⭐ Destacados
+                    </h2>
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                      {featured.map((p) => (
+                        <ProductCard key={p.id} product={p} onAdd={addToCart} onOpenDetail={() => openProductDetail(p)} engine={engine} accent={accent} buttonRadiusClass={buttonRadiusClass} isFavorite={isFavorite(p.id)} onToggleFavorite={() => toggleFavorite(p.id)} highlight />
+                      ))}
+                    </div>
+                  </section>
+                );
+              }
+
+              if (key === 'catalogo') {
+                return (
+                  <section key={key}>
+                    <h2 className="font-heading text-lg font-bold mb-4 flex items-center gap-2">
+                      <span className="w-1.5 h-5 rounded-full" style={{ backgroundColor: accent }} />
+                      {engine.catalogSectionLabel}
+                    </h2>
+                    {engine.key === 'business' && (
+                      <div className="space-y-3">
+                        {rest.map((p) => (
+                          <ProductListRow key={p.id} product={p} onAdd={addToCart} onOpenDetail={() => openProductDetail(p)} engine={engine} accent={accent} buttonRadiusClass={buttonRadiusClass} isFavorite={isFavorite(p.id)} onToggleFavorite={() => toggleFavorite(p.id)} />
+                        ))}
                       </div>
-                    );
-                  })}
-                </div>
-              )}
-              {engine.key !== 'business' && engine.key !== 'restaurant' && (
-                <div className={`grid gap-5 ${engine.key === 'fashion' ? 'grid-cols-2' : 'sm:grid-cols-2 lg:grid-cols-3'}`}>
-                  {rest.map((p) => (
-                    <ProductCard key={p.id} product={p} onAdd={addToCart} onOpenDetail={() => setSelectedProduct(p)} engine={engine} accent={accent} buttonRadiusClass={buttonRadiusClass} isFavorite={isFavorite(p.id)} onToggleFavorite={() => toggleFavorite(p.id)} />
-                  ))}
-                </div>
-              )}
-            </section>
+                    )}
+                    {engine.key === 'restaurant' && (
+                      <div className="space-y-6">
+                        {(activeCategory ? [activeCategory] : categories.length > 0 ? categories : ['']).map((cat) => {
+                          const items = rest.filter((p) => (cat ? p.category === cat : !p.category));
+                          if (items.length === 0) return null;
+                          return (
+                            <div key={cat || 'sin-categoria'}>
+                              {cat && <h3 className="text-sm font-semibold text-black/70 mb-2">{cat}</h3>}
+                              <div className="space-y-3">
+                                {items.map((p) => (
+                                  <RestaurantMenuRow key={p.id} product={p} onAdd={addToCart} onOpenDetail={() => openProductDetail(p)} engine={engine} accent={accent} isFavorite={isFavorite(p.id)} onToggleFavorite={() => toggleFavorite(p.id)} />
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    {engine.key !== 'business' && engine.key !== 'restaurant' && (
+                      <div className={`grid gap-5 ${engine.key === 'fashion' ? 'grid-cols-2' : 'sm:grid-cols-2 lg:grid-cols-3'}`}>
+                        {rest.map((p) => (
+                          <ProductCard key={p.id} product={p} onAdd={addToCart} onOpenDetail={() => openProductDetail(p)} engine={engine} accent={accent} buttonRadiusClass={buttonRadiusClass} isFavorite={isFavorite(p.id)} onToggleFavorite={() => toggleFavorite(p.id)} />
+                        ))}
+                      </div>
+                    )}
+                  </section>
+                );
+              }
+
+              return null;
+            })}
           </div>
         )}
       </main>
@@ -686,10 +769,57 @@ export default function Store() {
 
             {cart.length > 0 && (
               <div className="border-t px-5 py-4 space-y-3">
-                <div className="flex items-center justify-between font-semibold text-sm">
-                  <span>Total</span>
-                  <span>${total} MXN</span>
+                {appliedCoupon ? (
+                  <div className="flex items-center justify-between bg-bizly-green/10 rounded-lg px-3 py-2 text-xs">
+                    <span className="font-medium">
+                      🎟️ {appliedCoupon.code} aplicado (-
+                      {appliedCoupon.type === 'percentage' ? `${appliedCoupon.value}%` : `$${appliedCoupon.value} MXN`})
+                    </span>
+                    <button onClick={removeCoupon} className="text-black/40 font-medium">
+                      Quitar
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Código de descuento"
+                        value={couponInput}
+                        onChange={(e) => setCouponInput(e.target.value)}
+                        className="flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none uppercase"
+                      />
+                      <button
+                        onClick={applyCoupon}
+                        disabled={checkingCoupon || !couponInput.trim()}
+                        className="px-4 py-2 rounded-lg bg-black/5 text-xs font-semibold disabled:opacity-50"
+                      >
+                        {checkingCoupon ? '...' : 'Aplicar'}
+                      </button>
+                    </div>
+                    {couponError && <p className="text-xs text-red-600 mt-1">{couponError}</p>}
+                  </div>
+                )}
+
+                <div className="space-y-1">
+                  {appliedCoupon && (
+                    <>
+                      <div className="flex items-center justify-between text-xs text-black/50">
+                        <span>Subtotal</span>
+                        <span>${subtotal} MXN</span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-bizly-green">
+                        <span>Descuento</span>
+                        <span>-${discountAmount} MXN</span>
+                      </div>
+                    </>
+                  )}
+                  <div className="flex items-center justify-between font-semibold text-sm">
+                    <span>Total</span>
+                    <span>${total} MXN</span>
+                  </div>
                 </div>
+
                 <input
                   type="text"
                   placeholder="Tu nombre"

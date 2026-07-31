@@ -114,3 +114,30 @@ export function getStoreEngine(business: Business): StoreEngine {
   const key = CATEGORY_TO_ENGINE[business.category] || 'business';
   return ENGINES[key];
 }
+
+// Secciones de contenido que el dueño puede reordenar y ocultar desde
+// Configuración → Diseño → Distribución. "catalogo" no se puede ocultar
+// porque es donde se hace el pedido — sí se puede mover de lugar.
+export interface SectionDef {
+  key: string;
+  label: string;
+  canHide: boolean;
+}
+
+export const SECTION_DEFS: SectionDef[] = [
+  { key: 'nuevos_lanzamientos', label: 'Nuevos lanzamientos', canHide: true },
+  { key: 'promociones', label: 'Promociones', canHide: true },
+  { key: 'destacados', label: 'Destacados', canHide: true },
+  { key: 'catalogo', label: 'Catálogo completo', canHide: false },
+];
+
+export const DEFAULT_SECTION_ORDER = SECTION_DEFS.map((s) => s.key);
+
+export function getSectionOrder(business: Business): string[] {
+  const stored = business.sectionOrder;
+  if (!stored || stored.length === 0) return DEFAULT_SECTION_ORDER;
+  // Por si en el futuro se agregan secciones nuevas que el negocio no tenía
+  // guardadas todavía, las añadimos al final para que no desaparezcan.
+  const missing = DEFAULT_SECTION_ORDER.filter((k) => !stored.includes(k));
+  return [...stored, ...missing];
+}

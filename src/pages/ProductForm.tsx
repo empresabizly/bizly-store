@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { Product, ProductBadge, PRODUCT_BADGE_LABELS, Category } from '../types';
 import ProductImageUploader from '../components/ProductImageUploader';
 import { CloudinaryUploadResult } from '../cloudinary/upload';
+import { deleteCloudinaryImage } from '../cloudinary/deleteImage';
 
 export default function ProductForm() {
   const { business } = useAuth();
@@ -66,12 +67,16 @@ export default function ProductForm() {
   }, [isEditing, productId]);
 
   function handleImageUploaded(result: CloudinaryUploadResult) {
+    if (imageCloudinaryId && imageCloudinaryId !== result.cloudinaryId) {
+      deleteCloudinaryImage(imageCloudinaryId);
+    }
     setImageUrl(result.url);
     setImageCloudinaryId(result.cloudinaryId);
     setImageCreatedAt(Date.now());
   }
 
   function handleImageRemoved() {
+    deleteCloudinaryImage(imageCloudinaryId);
     setImageUrl('');
     setImageCloudinaryId('');
     setImageCreatedAt(undefined);

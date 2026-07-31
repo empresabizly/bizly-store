@@ -10,6 +10,8 @@ import DashboardHome from './pages/DashboardHome';
 import Settings from './pages/Settings';
 import Orders from './pages/Orders';
 import Categories from './pages/Categories';
+import Stats from './pages/Stats';
+import Coupons from './pages/Coupons';
 import ProductForm from './pages/ProductForm';
 import Store from './pages/Store';
 
@@ -52,6 +54,22 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <Categories />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/cupones"
+            element={
+              <ProtectedRoute>
+                <Coupons />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/estadisticas"
+            element={
+              <ProtectedRoute>
+                <Stats />
               </ProtectedRoute>
             }
           />

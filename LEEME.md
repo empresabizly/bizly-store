@@ -287,16 +287,114 @@ primera categoría desde el panel, el campo se convierte en un selector.
 ## Estética de marca grande (Nike/Liverpool) y apps de comida (Uber Eats/McDonald's)
 
 - **Tipografía más audaz** en el nombre del negocio (más grande, extra bold, tracking ajustado).
-- **Barra de confianza** debajo del hero — con datos honestos de cómo
-  funciona la plataforma ("Pedido directo por WhatsApp", "Trato directo sin
-  intermediarios", "Catálogo siempre actualizado"). **No se agregaron
-  promesas que no podemos garantizar** (nada de "compra 100% segura" o
-  "envío gratis" — no hay pasarela de pago ni política de envío real todavía).
 - **Encabezados de sección con acento de color** (barrita vertical junto al
   título), estilo tiendas departamentales.
 - **Barra de carrito persistente** en móvil, estilo Uber Eats/McDonald's: en
   cuanto agregas algo, aparece flotando arriba del nav inferior con el total
   y "Ver pedido →", siempre visible mientras sigues navegando el catálogo.
+
+(Se quitó la barra de confianza "Pedido directo por WhatsApp / Trato directo
+/ Catálogo actualizado" que se había agregado — no gustó visualmente.)
+
+## Notificaciones de pedido nuevo (nuevo)
+
+- **Resumen y Pedidos ahora se actualizan en tiempo real** (sin recargar la
+  página) usando Firestore en vivo — en cuanto un cliente hace un pedido, tu
+  panel lo refleja al instante.
+- **Aviso con sonido** (generado en el navegador, sin archivos externos) y
+  **banner visual** en Resumen cuando llega un pedido mientras tienes el panel abierto.
+- **Notificación del sistema operativo**: en Resumen hay un botón "Activar"
+  para conceder permiso — una vez activado, ves una notificación tipo push
+  del navegador aunque la pestaña esté en segundo plano.
+
+**Límite honesto:** esto funciona mientras el navegador/pestaña siga abierto
+(aunque esté minimizado o en otra pestaña). Si cierras completamente el
+navegador o el celular, no vas a recibir el aviso — eso requeriría un
+servidor de notificaciones push real (como Firebase Cloud Messaging con
+Cloud Functions), que implica activar el plan Blaze. No se implementó a
+propósito, para mantener el proyecto sin costos de backend.
+
+## Estadísticas avanzadas (nuevo)
+
+Nueva pestaña **📈 Estadísticas** en el dashboard, con datos 100% reales
+(nada inventado):
+
+- Visitas a tu tienda (últimos 30 días) — se cuentan desde que subas este cambio.
+- Pedidos totales, ticket promedio, ventas completadas.
+- Tasa de conversión aproximada (pedidos ÷ visitas).
+- Gráfica de ventas de los últimos 14 días.
+- Top 5 productos más vendidos (por cantidad real en pedidos).
+- Top 5 productos más vistos (cuenta cada vez que alguien abre el detalle de un producto).
+
+**Cómo funciona el conteo:** cada vez que alguien entra a tu tienda pública o
+abre el detalle de un producto, se guarda un registro pequeño en Firestore
+(colección `events`). No hay datos de antes de esta actualización — empieza
+en cero.
+
+Esta función está protegida por el sistema de planes (`advancedStats`, plan
+Emprendedor+) — pero como el desbloqueo global sigue activado
+(`ENFORCE_PLAN_LIMITS = false`), todos los negocios ya la pueden ver.
+
+## Cupones y descuentos reales (nuevo)
+
+Nueva pestaña **🎟️ Cupones** en el dashboard — crea códigos de descuento de verdad:
+
+- Porcentaje (%) o monto fijo (MXN)
+- Compra mínima opcional
+- Límite de usos opcional
+- Fecha de expiración opcional
+- Activar/desactivar sin borrar
+
+**En la tienda pública**, el cliente escribe el código en el carrito antes de
+pagar. Si es válido, el descuento se aplica de verdad al subtotal, se refleja
+en el mensaje de WhatsApp (Subtotal / Cupón / Total), y se guarda en el
+pedido — nada de "cupón decorativo" que no hace nada.
+
+El contador de usos del cupón se actualiza automáticamente cuando se usa,
+para que el límite de usos funcione de verdad.
+
+## Editor de distribución (nuevo)
+
+Nueva sub-pestaña **🧩 Distribución** dentro de Configuración → Diseño:
+
+- Reordena con flechas ▲▼ las secciones de contenido de tu tienda: **Nuevos
+  lanzamientos, Promociones, Destacados, Catálogo completo**.
+- Oculta por completo las que no uses (ej. si nunca usas "Promociones", la
+  puedes apagar). El **Catálogo** no se puede ocultar — es donde el cliente
+  hace su pedido.
+- El encabezado (portada/logo/nombre), buscador, categorías y pie de página
+  siempre quedan fijos — el editor solo reordena el contenido de productos.
+
+Cada negocio guarda su propio orden en Firestore (`sectionOrder`,
+`hiddenSections`), así que dos negocios pueden tener la misma plantilla pero
+mostrar sus secciones en orden distinto.
+
+## Borrado permanente en Cloudinary (nuevo)
+
+Antes, "eliminar" una imagen solo quitaba la referencia en Firestore — el
+archivo se quedaba guardado para siempre en tu cuenta de Cloudinary. Ahora
+sí se borra de verdad, usando una **Netlify Function** (un mini-servidor
+gratis incluido en tu hosting) para poder usar el API Secret de Cloudinary
+de forma segura, sin exponerlo nunca en el navegador.
+
+Aplica a: logo, portada, íconos de categoría, y fotos de producto (al
+quitarlas, reemplazarlas, o al borrar el producto/categoría completo).
+
+### Configuración necesaria (una sola vez)
+
+1. Ve a tu cuenta de **Cloudinary** → ⚙️ Settings → pestaña **Access Keys**.
+2. Copia tu **API Key** y tu **API Secret** (el Secret es sensible — no lo
+   compartas ni lo pongas en ningún archivo de código).
+3. Ve a **Netlify** → tu sitio `bizlystore` → **Site configuration** →
+   **Environment variables** → **Add a variable**, y agrega estas 3:
+   - `CLOUDINARY_CLOUD_NAME` → tu Cloud Name (el mismo que ya usas, `ofhlgkwn`)
+   - `CLOUDINARY_API_KEY` → tu API Key
+   - `CLOUDINARY_API_SECRET` → tu API Secret
+4. Vuelve a desplegar el sitio (Trigger deploy) para que Netlify las aplique.
+
+Si no configuras esto, la app sigue funcionando exactamente igual que antes
+(las imágenes solo dejan de mostrarse, pero no se borran del todo) — no se
+rompe nada, solo no se activa el borrado permanente.
 
 ## Qué incluye este MVP
 

@@ -10,14 +10,15 @@ import LockedFeature from '../components/LockedFeature';
 import DashboardNav from '../components/DashboardNav';
 import { getPlanFeatures, PLAN_FEATURES, PLAN_ORDER } from '../config/plans';
 import { extractDominantColor } from '../utils/extractDominantColor';
-import { ALL_ENGINES, EngineKey } from '../config/storeTemplates';
+import { ALL_ENGINES, EngineKey, SECTION_DEFS, DEFAULT_SECTION_ORDER, getSectionOrder } from '../config/storeTemplates';
 
-type SubTab = 'identidad' | 'informacion' | 'diseno' | 'plan';
+type SubTab = 'identidad' | 'informacion' | 'diseno' | 'distribucion' | 'plan';
 
 const SUB_TABS: { key: SubTab; label: string }[] = [
   { key: 'identidad', label: '🏪 Identidad' },
   { key: 'informacion', label: '📋 Información' },
   { key: 'diseno', label: '🎨 Diseño' },
+  { key: 'distribucion', label: '🧩 Distribución' },
   { key: 'plan', label: '💳 Plan' },
 ];
 
@@ -42,6 +43,10 @@ export default function Settings() {
   const [saved, setSaved] = useState(false);
   const [extractingColor, setExtractingColor] = useState(false);
   const [colorError, setColorError] = useState('');
+  const [sectionOrderState, setSectionOrderState] = useState<string[]>(DEFAULT_SECTION_ORDER);
+  const [hiddenSectionsState, setHiddenSectionsState] = useState<string[]>([]);
+  const [savingSections, setSavingSections] = useState(false);
+  const [sectionsSaved, setSectionsSaved] = useState(false);
 
   async function suggestColorFromLogo() {
     if (!business?.logoUrl) return;
@@ -72,7 +77,36 @@ export default function Settings() {
     setTemplateEngine(business.templateEngine || '');
     setInstagram(business.socialLinks?.instagram || '');
     setFacebook(business.socialLinks?.facebook || '');
+    setSectionOrderState(getSectionOrder(business));
+    setHiddenSectionsState(business.hiddenSections || []);
   }, [business]);
+
+  function moveSection(index: number, direction: -1 | 1) {
+    setSectionOrderState((prev) => {
+      const next = [...prev];
+      const target = index + direction;
+      if (target < 0 || target >= next.length) return prev;
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
+  }
+
+  function toggleSectionHidden(key: string) {
+    setHiddenSectionsState((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
+  }
+
+  async function saveDistribution() {
+    if (!business) return;
+    setSavingSections(true);
+    await updateDoc(doc(db, 'businesses', business.id), {
+      sectionOrder: sectionOrderState,
+      hiddenSections: hiddenSectionsState,
+    });
+    await refreshBusiness();
+    setSavingSections(false);
+    setSectionsSaved(true);
+    setTimeout(() => setSectionsSaved(false), 3000);
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -371,6 +405,75 @@ export default function Settings() {
               {saving ? 'Guardando...' : saved ? '✓ Guardado' : 'Guardar cambios'}
             </button>
           </form>
+        )}
+
+        {/* DISTRIBUCIÓN */}
+        {subTab === 'distribucion' && (
+          <div className="bg-white rounded-xl shadow-sm p-5">
+            <h3 className="text-sm font-semibold mb-1">Orden de secciones</h3>
+            <p className="text-xs text-black/40 mb-4">
+              Cambia el orden en que aparecen las secciones de contenido en tu tienda pública
+              (el encabezado, buscador, categorías y pie de página siempre se quedan fijos).
+              Las secciones vacías (sin productos que cumplan la condición) no se muestran
+              aunque estén activadas.
+            </p>
+
+            <div className="space-y-2">
+              {sectionOrderState.map((key, index) => {
+                const def = SECTION_DEFS.find((s) => s.key === key);
+                if (!def) return null;
+                const hidden = hiddenSectionsState.includes(key);
+                return (
+                  <div
+                    key={key}
+                    className={`flex items-center gap-3 border rounded-lg px-3 py-2.5 ${
+                      hidden ? 'bg-black/[0.02] opacity-60' : 'bg-white'
+                    }`}
+                  >
+                    <div className="flex flex-col">
+                      <button
+                        type="button"
+                        onClick={() => moveSection(index, -1)}
+                        disabled={index === 0}
+                        className="text-black/40 disabled:opacity-20 text-xs leading-none py-0.5"
+                      >
+                        ▲
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveSection(index, 1)}
+                        disabled={index === sectionOrderState.length - 1}
+                        className="text-black/40 disabled:opacity-20 text-xs leading-none py-0.5"
+                      >
+                        ▼
+                      </button>
+                    </div>
+                    <span className="flex-1 text-sm font-medium">{def.label}</span>
+                    {def.canHide ? (
+                      <button
+                        type="button"
+                        onClick={() => toggleSectionHidden(key)}
+                        className="text-xs font-medium text-bizly-green shrink-0"
+                      >
+                        {hidden ? 'Mostrar' : 'Ocultar'}
+                      </button>
+                    ) : (
+                      <span className="text-[10px] text-black/30 shrink-0">Siempre visible</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <button
+              type="button"
+              onClick={saveDistribution}
+              disabled={savingSections}
+              className="w-full mt-5 py-3 rounded-full bg-bizly-green text-white font-semibold disabled:opacity-60"
+            >
+              {savingSections ? 'Guardando...' : sectionsSaved ? '✓ Guardado' : 'Guardar orden'}
+            </button>
+          </div>
         )}
 
         {/* PLAN */}

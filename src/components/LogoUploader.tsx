@@ -3,6 +3,7 @@ import { db } from '../firebase/config';
 import { useAuth } from '../context/AuthContext';
 import ImageUploader from './ImageUploader';
 import { CloudinaryUploadResult } from '../cloudinary/upload';
+import { deleteCloudinaryImage } from '../cloudinary/deleteImage';
 
 /**
  * Sube, cambia o elimina el logo del negocio del usuario actual.
@@ -13,26 +14,27 @@ export default function LogoUploader() {
 
   async function handleUploaded(result: CloudinaryUploadResult) {
     if (!business) return;
+    const previousId = business.logoCloudinaryId;
     await updateDoc(doc(db, 'businesses', business.id), {
       logoUrl: result.url,
       logoCloudinaryId: result.cloudinaryId,
       logoCreatedAt: Date.now(),
     });
     await refreshBusiness();
+    // Si estaba cambiando un logo anterior, borra el archivo viejo de Cloudinary.
+    if (previousId && previousId !== result.cloudinaryId) deleteCloudinaryImage(previousId);
   }
 
   async function handleRemoved() {
     if (!business) return;
-    // Nota: esto quita la referencia de Firestore, así que el logo deja de
-    // mostrarse en la app. El archivo permanece en Cloudinary (borrarlo de
-    // forma permanente requiere una llamada firmada desde un servidor, que
-    // no usamos aquí para mantener el proyecto sin costos de backend).
+    const previousId = business.logoCloudinaryId;
     await updateDoc(doc(db, 'businesses', business.id), {
       logoUrl: deleteField(),
       logoCloudinaryId: deleteField(),
       logoCreatedAt: deleteField(),
     });
     await refreshBusiness();
+    deleteCloudinaryImage(previousId);
   }
 
   if (!business) return null;

@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, query, where, getDocs, doc, updateDoc, orderBy } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useAuth } from '../context/AuthContext';
 import DashboardNav from '../components/DashboardNav';
 import { Order, OrderStatus, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '../types';
+import { playNotificationSound, showBrowserNotification } from '../utils/notifications';
 
 export default function Orders() {
   const { business, logout, loading: authLoading } = useAuth();
@@ -12,33 +13,52 @@ export default function Orders() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [filter, setFilter] = useState<OrderStatus | 'todos'>('todos');
+  const knownOrderIds = useRef<Set<string> | null>(null);
 
   useEffect(() => {
     if (!authLoading && !business) navigate('/onboarding');
   }, [authLoading, business, navigate]);
 
   useEffect(() => {
-    async function load() {
-      if (!business) return;
-      try {
-        const q = query(
-          collection(db, 'orders'),
-          where('businessId', '==', business.id),
-          orderBy('createdAt', 'desc')
-        );
-        const snap = await getDocs(q);
-        setOrders(snap.docs.map((d) => ({ ...(d.data() as Order), id: d.id })));
-      } catch {
-        // Si el índice compuesto todavía no existe en Firestore, reintenta sin orderBy
-        const q = query(collection(db, 'orders'), where('businessId', '==', business.id));
-        const snap = await getDocs(q);
-        const list = snap.docs.map((d) => ({ ...(d.data() as Order), id: d.id }));
-        list.sort((a, b) => b.createdAt - a.createdAt);
-        setOrders(list);
+    if (!business) return;
+
+    function handleSnapshot(list: Order[]) {
+      list.sort((a, b) => b.createdAt - a.createdAt);
+
+      if (knownOrderIds.current === null) {
+        knownOrderIds.current = new Set(list.map((o) => o.id));
+      } else {
+        const brandNew = list.find((o) => !knownOrderIds.current!.has(o.id));
+        if (brandNew) {
+          knownOrderIds.current.add(brandNew.id);
+          playNotificationSound();
+          showBrowserNotification('🛎️ Nuevo pedido', `${brandNew.customerName} — $${brandNew.total} MXN`);
+        }
       }
+
+      setOrders(list);
       setLoadingOrders(false);
     }
-    load();
+
+    let unsub: () => void;
+    let fallbackUnsub: (() => void) | null = null;
+
+    unsub = onSnapshot(
+      query(collection(db, 'orders'), where('businessId', '==', business.id), orderBy('createdAt', 'desc')),
+      (snap) => handleSnapshot(snap.docs.map((d) => ({ ...(d.data() as Order), id: d.id }))),
+      () => {
+        // Si el índice compuesto todavía no existe en Firestore, escucha sin orderBy
+        fallbackUnsub = onSnapshot(
+          query(collection(db, 'orders'), where('businessId', '==', business.id)),
+          (snap) => handleSnapshot(snap.docs.map((d) => ({ ...(d.data() as Order), id: d.id })))
+        );
+      }
+    );
+
+    return () => {
+      unsub();
+      fallbackUnsub?.();
+    };
   }, [business]);
 
   async function changeStatus(orderId: string, status: OrderStatus) {

@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useAuth } from '../context/AuthContext';
 import DashboardNav from '../components/DashboardNav';
 import { Product, Order, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '../types';
 import { getPlanFeatures } from '../config/plans';
+import { playNotificationSound, requestNotificationPermission, showBrowserNotification } from '../utils/notifications';
 
 export default function DashboardHome() {
   const { business, logout, loading: authLoading } = useAuth();
@@ -13,26 +14,53 @@ export default function DashboardHome() {
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loadingData, setLoadingData] = useState(true);
+  const [newOrderBanner, setNewOrderBanner] = useState<Order | null>(null);
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission>(
+    typeof Notification !== 'undefined' ? Notification.permission : 'denied'
+  );
+  const knownOrderIds = useRef<Set<string> | null>(null);
 
   useEffect(() => {
     if (!authLoading && !business) navigate('/onboarding');
   }, [authLoading, business, navigate]);
 
   useEffect(() => {
-    async function load() {
-      if (!business) return;
-      const [productsSnap, ordersSnap] = await Promise.all([
-        getDocs(query(collection(db, 'products'), where('businessId', '==', business.id))),
-        getDocs(query(collection(db, 'orders'), where('businessId', '==', business.id))),
-      ]);
-      setProducts(productsSnap.docs.map((d) => d.data() as Product));
-      const ordersList = ordersSnap.docs.map((d) => ({ ...(d.data() as Order), id: d.id }));
+    if (!business) return;
+
+    getDocs(query(collection(db, 'products'), where('businessId', '==', business.id))).then((snap) => {
+      setProducts(snap.docs.map((d) => d.data() as Product));
+    });
+
+    // Escucha en tiempo real: cualquier pedido nuevo aparece al instante,
+    // sin recargar la página, mientras tengas esta pestaña abierta.
+    const unsub = onSnapshot(query(collection(db, 'orders'), where('businessId', '==', business.id)), (snap) => {
+      const ordersList = snap.docs.map((d) => ({ ...(d.data() as Order), id: d.id }));
       ordersList.sort((a, b) => b.createdAt - a.createdAt);
+
+      if (knownOrderIds.current === null) {
+        // Primera carga: solo registramos qué pedidos ya existían, sin avisar.
+        knownOrderIds.current = new Set(ordersList.map((o) => o.id));
+      } else {
+        const brandNew = ordersList.find((o) => !knownOrderIds.current!.has(o.id));
+        if (brandNew) {
+          knownOrderIds.current.add(brandNew.id);
+          playNotificationSound();
+          setNewOrderBanner(brandNew);
+          showBrowserNotification('🛎️ Nuevo pedido', `${brandNew.customerName} — $${brandNew.total} MXN`);
+        }
+      }
+
       setOrders(ordersList);
       setLoadingData(false);
-    }
-    load();
+    });
+
+    return unsub;
   }, [business]);
+
+  async function handleEnableNotifications() {
+    const result = await requestNotificationPermission();
+    setNotifPermission(result);
+  }
 
   if (authLoading || !business) {
     return <div className="min-h-screen flex items-center justify-center text-black/50">Cargando...</div>;
@@ -75,6 +103,36 @@ export default function DashboardHome() {
       <DashboardNav active="resumen" />
 
       <main className="max-w-4xl mx-auto px-6 py-8">
+        {newOrderBanner && (
+          <div className="mb-6 bg-bizly-green/10 border border-bizly-green rounded-xl p-4 flex items-center justify-between">
+            <p className="text-sm font-medium">
+              🛎️ Nuevo pedido de <strong>{newOrderBanner.customerName}</strong> — ${newOrderBanner.total} MXN
+            </p>
+            <div className="flex items-center gap-3 shrink-0">
+              <Link to="/dashboard/pedidos" className="text-xs text-bizly-green font-semibold">
+                Ver
+              </Link>
+              <button onClick={() => setNewOrderBanner(null)} className="text-black/40 text-lg leading-none">
+                ×
+              </button>
+            </div>
+          </div>
+        )}
+
+        {notifPermission === 'default' && (
+          <div className="mb-6 bg-white border rounded-xl p-4 flex items-center justify-between gap-3">
+            <p className="text-xs text-black/50">
+              🔔 Activa las notificaciones para enterarte al instante de nuevos pedidos, incluso si esta pestaña está en segundo plano.
+            </p>
+            <button
+              onClick={handleEnableNotifications}
+              className="text-xs font-semibold text-bizly-green shrink-0"
+            >
+              Activar
+            </button>
+          </div>
+        )}
+
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="font-heading text-lg font-semibold">Resumen de tu negocio</h2>

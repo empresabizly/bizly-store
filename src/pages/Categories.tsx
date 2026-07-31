@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import DashboardNav from '../components/DashboardNav';
 import { Category, Product } from '../types';
 import { validateImageFile, validateImageLoads, uploadToCloudinary, CloudinaryUploadResult } from '../cloudinary/upload';
+import { deleteCloudinaryImage } from '../cloudinary/deleteImage';
 
 export default function Categories() {
   const { user, business, logout, loading: authLoading } = useAuth();
@@ -63,11 +64,14 @@ export default function Categories() {
 
   async function handleDelete(categoryId: string) {
     if (!confirm('¿Eliminar esta categoría? Los productos que la usan no se borran, solo dejarán de mostrarla.')) return;
+    const cat = categories.find((c) => c.id === categoryId);
     await deleteDoc(doc(db, 'categories', categoryId));
     setCategories((prev) => prev.filter((c) => c.id !== categoryId));
+    deleteCloudinaryImage(cat?.cloudinaryId);
   }
 
   async function handleImageUploaded(categoryId: string, result: CloudinaryUploadResult) {
+    const previousId = categories.find((c) => c.id === categoryId)?.cloudinaryId;
     await updateDoc(doc(db, 'categories', categoryId), {
       imageUrl: result.url,
       cloudinaryId: result.cloudinaryId,
@@ -75,14 +79,17 @@ export default function Categories() {
     setCategories((prev) =>
       prev.map((c) => (c.id === categoryId ? { ...c, imageUrl: result.url, cloudinaryId: result.cloudinaryId } : c))
     );
+    if (previousId && previousId !== result.cloudinaryId) deleteCloudinaryImage(previousId);
   }
 
   async function handleImageRemoved(categoryId: string) {
+    const previousId = categories.find((c) => c.id === categoryId)?.cloudinaryId;
     await updateDoc(doc(db, 'categories', categoryId), {
       imageUrl: deleteField(),
       cloudinaryId: deleteField(),
     });
     setCategories((prev) => prev.map((c) => (c.id === categoryId ? { ...c, imageUrl: undefined } : c)));
+    deleteCloudinaryImage(previousId);
   }
 
   if (authLoading || !business) {

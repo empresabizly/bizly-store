@@ -38,5 +38,31 @@ service cloud.firestore {
         get(/databases/$(database)/documents/businesses/$(resource.data.businessId)).data.ownerId == request.auth.uid;
       allow delete: if false;
     }
+
+    // Eventos de analítica (visitas a la tienda, vistas de producto):
+    // cualquier visitante puede generar uno, solo el dueño puede leerlos.
+    match /events/{eventId} {
+      allow create: if true;
+      allow read: if request.auth != null &&
+        get(/databases/$(database)/documents/businesses/$(resource.data.businessId)).data.ownerId == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // Cupones: lectura pública (para validar el código al pagar). Solo el
+    // dueño puede crear/editar/borrar. Excepción acotada: cualquier cliente
+    // puede incrementar el contador de usos en 1 al usar un cupón, pero no
+    // puede tocar ningún otro campo (evita que alguien manipule el descuento).
+    match /coupons/{couponId} {
+      allow read: if true;
+      allow create: if request.auth != null &&
+        get(/databases/$(database)/documents/businesses/$(request.resource.data.businessId)).data.ownerId == request.auth.uid;
+      allow delete: if request.auth != null &&
+        get(/databases/$(database)/documents/businesses/$(resource.data.businessId)).data.ownerId == request.auth.uid;
+      allow update: if
+        (request.auth != null &&
+          get(/databases/$(database)/documents/businesses/$(resource.data.businessId)).data.ownerId == request.auth.uid) ||
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['usageCount']) &&
+          request.resource.data.usageCount == resource.data.usageCount + 1);
+    }
   }
 }
