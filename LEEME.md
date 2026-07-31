@@ -256,6 +256,22 @@ automático según la categoría, pero cada negocio puede forzar cualquiera de
 los 4 motores manualmente (Bizly Fashion, Food, Restaurante o Business),
 sin importar su categoría.
 
+## Categorías administrables (nuevo)
+
+Ya no son solo texto libre por producto — ahora hay una sección completa
+**Categorías** en el dashboard (nueva pestaña):
+
+- Crea tus propias categorías (ej. Perfumes, Celulares, Relojes).
+- Súbele un ícono/logo a cada una (usa Cloudinary, igual que fotos de producto).
+- Al crear o editar un producto, eliges la categoría de una **lista**, no
+  escribiendo texto libre — así se evitan duplicados por mayúsculas/minúsculas.
+- En tu tienda pública, el ícono personalizado reemplaza automáticamente al
+  emoji genérico que se usaba antes.
+
+Si todavía no has creado ninguna categoría, el campo de producto sigue
+aceptando texto libre (como antes) para no romper nada — en cuanto creas tu
+primera categoría desde el panel, el campo se convierte en un selector.
+
 ## Qué incluye este MVP
 
 - Registro / login (Firebase Auth)

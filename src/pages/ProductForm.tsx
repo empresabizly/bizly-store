@@ -1,9 +1,9 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useAuth } from '../context/AuthContext';
-import { Product, ProductBadge, PRODUCT_BADGE_LABELS } from '../types';
+import { Product, ProductBadge, PRODUCT_BADGE_LABELS, Category } from '../types';
 import ProductImageUploader from '../components/ProductImageUploader';
 import { CloudinaryUploadResult } from '../cloudinary/upload';
 
@@ -27,6 +27,19 @@ export default function ProductForm() {
   const [available, setAvailable] = useState(true);
   const [featured, setFeatured] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [businessCategories, setBusinessCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    async function loadCategories() {
+      if (!business) return;
+      const q = query(collection(db, 'categories'), where('businessId', '==', business.id));
+      const snap = await getDocs(q);
+      const list = snap.docs.map((d) => d.data() as Category);
+      list.sort((a, b) => a.createdAt - b.createdAt);
+      setBusinessCategories(list);
+    }
+    loadCategories();
+  }, [business]);
 
   useEffect(() => {
     async function load() {
@@ -154,12 +167,39 @@ export default function ProductForm() {
 
           <div>
             <label className="text-sm font-medium">Categoría</label>
-            <input
-              className="w-full mt-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-bizly-green"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              placeholder="Ej. Ropa"
-            />
+            {businessCategories.length > 0 ? (
+              <select
+                className="w-full mt-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-bizly-green bg-white"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+              >
+                <option value="">Sin categoría</option>
+                {businessCategories.map((c) => (
+                  <option key={c.id} value={c.name}>
+                    {c.name}
+                  </option>
+                ))}
+                {category && !businessCategories.some((c) => c.name === category) && (
+                  <option value={category}>{category} (ya no existe, elige otra)</option>
+                )}
+              </select>
+            ) : (
+              <>
+                <input
+                  className="w-full mt-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-bizly-green"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  placeholder="Ej. Ropa"
+                />
+                <p className="text-xs text-black/30 mt-1">
+                  Tip: crea tus categorías desde el panel (con su propio ícono) en{' '}
+                  <Link to="/dashboard/categorias" className="text-bizly-green font-medium">
+                    Categorías
+                  </Link>{' '}
+                  y aquí podrás elegirlas de una lista.
+                </p>
+              </>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">

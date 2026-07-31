@@ -10,6 +10,7 @@ import {
   BUSINESS_CATEGORIES,
   OrderItem,
   PRODUCT_BADGE_LABELS,
+  Category,
 } from '../types';
 import { getPlanFeatures } from '../config/plans';
 import { getStoreEngine } from '../config/storeTemplates';
@@ -32,6 +33,7 @@ export default function Store() {
   const { slug } = useParams();
   const [business, setBusiness] = useState<Business | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
+  const [businessCategories, setBusinessCategories] = useState<Category[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [cartOpen, setCartOpen] = useState(false);
@@ -55,6 +57,10 @@ export default function Store() {
         const q = query(collection(db, 'products'), where('businessId', '==', b.id), where('available', '==', true));
         const snap = await getDocs(q);
         setProducts(snap.docs.map((d) => d.data() as Product));
+
+        const catQ = query(collection(db, 'categories'), where('businessId', '==', b.id));
+        const catSnap = await getDocs(catQ);
+        setBusinessCategories(catSnap.docs.map((d) => d.data() as Category));
       }
       setLoading(false);
     }
@@ -154,6 +160,10 @@ export default function Store() {
 
   function scrollTo(id: string) {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function customCategoryIcon(categoryName: string): string | undefined {
+    return businessCategories.find((c) => c.name.toLowerCase() === categoryName.toLowerCase())?.imageUrl;
   }
 
   if (loading) {
@@ -392,20 +402,28 @@ export default function Store() {
                 {engine.key === 'food' ? (
                   <>
                     <span
-                      className="w-14 h-14 rounded-full flex items-center justify-center text-xl"
+                      className="w-14 h-14 rounded-full flex items-center justify-center text-xl overflow-hidden"
                       style={
                         activeCategory === cat
                           ? { backgroundColor: accent, color: 'white' }
                           : { backgroundColor: 'white', color: 'rgba(0,0,0,0.6)', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }
                       }
                     >
-                      {foodCategoryIcon(cat)}
+                      {customCategoryIcon(cat) ? (
+                        <img src={customCategoryIcon(cat)} alt={cat} className="w-full h-full object-cover" />
+                      ) : (
+                        foodCategoryIcon(cat)
+                      )}
                     </span>
                     <span className="text-[11px] text-black/60 font-medium truncate w-full text-center">{cat}</span>
                   </>
                 ) : (
                   <>
-                    <span className="text-lg">🏷️</span>
+                    {customCategoryIcon(cat) ? (
+                      <img src={customCategoryIcon(cat)} alt={cat} className="w-8 h-8 rounded-full object-cover" />
+                    ) : (
+                      <span className="text-lg">🏷️</span>
+                    )}
                     <span className="truncate w-full">{cat}</span>
                     <span className="text-[10px] opacity-70">
                       {products.filter((p) => p.category === cat).length}
@@ -437,7 +455,16 @@ export default function Store() {
           <div className="space-y-10">
             {showNewArrivals && (
               <section>
-                <h2 className="font-heading text-lg font-semibold mb-4">🆕 {engine.newArrivalsLabel}</h2>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-heading text-lg font-semibold">🆕 {engine.newArrivalsLabel}</h2>
+                  <button
+                    onClick={() => scrollTo('catalogo')}
+                    className="text-xs font-medium"
+                    style={{ color: accent }}
+                  >
+                    Ver todo
+                  </button>
+                </div>
                 <div className="flex gap-4 overflow-x-auto no-scrollbar pb-1">
                   {newArrivals.map((p) => (
                     <div key={p.id} className="w-40 shrink-0">
@@ -525,19 +552,73 @@ export default function Store() {
         </section>
       )}
 
-      <footer className="text-center py-8 border-t mt-4">
-        <p className="font-heading font-semibold text-sm">{business.name}</p>
-        {business.location && <p className="text-xs text-black/40 mt-1">📍 {business.location}</p>}
-        <a
-          href={`https://wa.me/${business.whatsapp}`}
-          target="_blank"
-          rel="noreferrer"
-          className="text-xs font-medium mt-1 inline-block"
-          style={{ color: accent }}
-        >
-          💬 {business.whatsapp}
-        </a>
-        {showBranding && <p className="text-xs text-black/30 mt-4">Creado con Bizly Store</p>}
+      <footer className="border-t mt-4 bg-white">
+        <div className="max-w-3xl mx-auto px-6 py-10">
+          <div className="flex flex-col sm:flex-row sm:justify-between gap-8">
+            <div className="text-center sm:text-left">
+              {business.logoUrl ? (
+                <img src={business.logoUrl} alt={business.name} className="w-10 h-10 rounded-full object-cover mx-auto sm:mx-0" />
+              ) : (
+                <div
+                  className="w-10 h-10 rounded-full text-white flex items-center justify-center font-heading font-bold mx-auto sm:mx-0"
+                  style={{ backgroundColor: accent }}
+                >
+                  {business.name.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <p className="font-heading font-semibold text-sm mt-2">{business.name}</p>
+              {business.description && (
+                <p className="text-xs text-black/40 mt-1 max-w-xs">{business.description}</p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-8 text-center sm:text-left">
+              <div>
+                <p className="text-xs font-semibold text-black/70 mb-2">Contacto</p>
+                <ul className="space-y-1.5 text-xs text-black/50">
+                  <li>
+                    <a href={`https://wa.me/${business.whatsapp}`} target="_blank" rel="noreferrer">
+                      💬 WhatsApp
+                    </a>
+                  </li>
+                  {business.location && <li>📍 {business.location}</li>}
+                  {engine.showSchedule && business.schedule && <li>🕒 {business.schedule}</li>}
+                </ul>
+              </div>
+
+              {(business.socialLinks?.instagram || business.socialLinks?.facebook) && (
+                <div>
+                  <p className="text-xs font-semibold text-black/70 mb-2">Síguenos</p>
+                  <ul className="space-y-1.5 text-xs text-black/50">
+                    {business.socialLinks?.instagram && (
+                      <li>
+                        <a
+                          href={`https://instagram.com/${business.socialLinks.instagram.replace('@', '')}`}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          📷 Instagram
+                        </a>
+                      </li>
+                    )}
+                    {business.socialLinks?.facebook && (
+                      <li>
+                        <a href={business.socialLinks.facebook} target="_blank" rel="noreferrer">
+                          📘 Facebook
+                        </a>
+                      </li>
+                    )}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="border-t mt-8 pt-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-black/30">
+            <span>© {new Date().getFullYear()} {business.name}. Todos los derechos reservados.</span>
+            {showBranding && <span>Creado con Bizly Store</span>}
+          </div>
+        </div>
       </footer>
 
       {/* Carrito lateral */}

@@ -9,6 +9,7 @@ import Dashboard from './pages/Dashboard';
 import DashboardHome from './pages/DashboardHome';
 import Settings from './pages/Settings';
 import Orders from './pages/Orders';
+import Categories from './pages/Categories';
 import ProductForm from './pages/ProductForm';
 import Store from './pages/Store';
 
@@ -43,6 +44,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/categorias"
+            element={
+              <ProtectedRoute>
+                <Categories />
               </ProtectedRoute>
             }
           />

@@ -61,6 +61,15 @@ export interface CartItem {
   quantity: number;
 }
 
+export interface Category {
+  id: string;
+  businessId: string;
+  name: string;
+  imageUrl?: string;
+  cloudinaryId?: string;
+  createdAt: number;
+}
+
 export interface OrderItem {
   productId: string;
   name: string;
