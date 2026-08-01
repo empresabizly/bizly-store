@@ -92,6 +92,8 @@ export interface Coupon {
   usageCount: number;
   active: boolean;
   createdAt: number;
+  sellerName?: string;
+  commissionPercent?: number;
 }
 
 export interface OrderItem {

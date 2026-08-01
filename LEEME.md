@@ -396,6 +396,73 @@ Si no configuras esto, la app sigue funcionando exactamente igual que antes
 (las imágenes solo dejan de mostrarse, pero no se borran del todo) — no se
 rompe nada, solo no se activa el borrado permanente.
 
+## Crear cupón al mismo tiempo que un producto (nuevo)
+
+En el formulario de "Nuevo producto" / "Editar producto", al final hay un
+panel plegable: **"🎟️ ¿Quieres crear un cupón de descuento también?"**.
+Al abrirlo:
+
+- Ves tus cupones existentes como chips (código + descuento).
+- Puedes crear uno nuevo ahí mismo (código, porcentaje o monto fijo) sin
+  salir del formulario ni perder lo que llevas escrito del producto.
+- Para opciones más avanzadas (compra mínima, límite de usos, expiración),
+  te manda a la pestaña completa de Cupones.
+
+Es el mismo sistema de cupones de siempre (aplican a toda la tienda, no a
+un producto en particular) — solo se hizo más rápido crearlos mientras
+subes productos, ya que suele ser el mismo momento en que se te ocurre
+hacer una promoción.
+
+## Categorías más limpias, Panel de vendedores, Excel y hoja de notas (nuevo)
+
+- **Categorías sin íconos genéricos**: la sección "Explora por categoría" de
+  la tienda pública ahora son pastillas de texto limpio (sin emojis por
+  default) para verse más profesional. Si le subiste un ícono propio a una
+  categoría desde el panel, ese sí se sigue mostrando (es tu marca, no un
+  genérico).
+
+- **Panel de vendedores** (pestaña nueva dentro de 🎟️ Cupones): asigna un
+  cupón a un vendedor (nombre + % de comisión opcional). El panel calcula
+  automáticamente, con datos reales de tus pedidos:
+  - Cuántos pedidos generó cada vendedor (totales y completados)
+  - Cuánto vendió en total (solo pedidos con estado "Completado")
+  - Cuánto comisión le corresponde según el % que le asignaste
+
+- **Descargar Excel real**: el botón "📊 Descargar Excel" genera un archivo
+  `.xlsx` de verdad (con la librería SheetJS), con columnas ajustadas y una
+  fila de totales — se abre directo en Excel/Google Sheets. **Nota honesta:**
+  la versión gratuita de esta librería no permite agregar colores/negritas
+  al archivo (eso requeriría una versión de paga de la librería) — el
+  archivo sale limpio y bien organizado, pero sin diseño de colores.
+
+- **Hoja de notas de ventas** (banner en Resumen del dashboard): genera una
+  hoja imprimible con tu logo, para llevar registro manual de ventas del día
+  (útil en punto de venta físico o eventos). Botón "Imprimir / Guardar como
+  PDF" — usa la función de impresión del navegador (puedes elegir "Guardar
+  como PDF" en el diálogo de impresión).
+
+## Comparte tu tienda (nuevo)
+
+Nueva tarjeta al inicio del **Resumen** del dashboard: muestra el link
+directo a tu tienda pública y botones para:
+
+- **Copiar** el link
+- Compartir por **WhatsApp** (abre WhatsApp con el mensaje ya armado)
+- Compartir por **Facebook** (abre el diálogo de publicar de Facebook)
+- **Más opciones** (solo aparece en celulares que soportan compartir nativo
+  del sistema — Instagram, Telegram, SMS, etc., lo que tengas instalado)
+- **Ver mi tienda** — la abre directo en una pestaña nueva
+
+## Comparte tu tienda (nuevo)
+
+Nueva tarjeta en Resumen del dashboard: **"🔗 Comparte tu tienda"**, con:
+
+- El enlace directo a tu tienda pública, con botón para copiarlo
+- Botón de compartir directo a **WhatsApp** (abre con el mensaje ya armado)
+- Botón de compartir directo a **Facebook**
+- Si tu navegador lo soporta (celulares principalmente), un botón **"📤 Más opciones"** que abre el menú nativo de compartir del sistema (Instagram, Telegram, SMS, etc.)
+- Botón **"👁️ Ver mi tienda"** para abrirla en una pestaña nueva
+
 ## Qué incluye este MVP
 
 - Registro / login (Firebase Auth)

@@ -12,6 +12,7 @@ import Orders from './pages/Orders';
 import Categories from './pages/Categories';
 import Stats from './pages/Stats';
 import Coupons from './pages/Coupons';
+import SalesNotesSheet from './pages/SalesNotesSheet';
 import ProductForm from './pages/ProductForm';
 import Store from './pages/Store';
 
@@ -54,6 +55,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <Categories />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/notas-venta"
+            element={
+              <ProtectedRoute>
+                <SalesNotesSheet />
               </ProtectedRoute>
             }
           />

@@ -19,17 +19,6 @@ import { useFavorites } from '../utils/useFavorites';
 
 type SortOption = 'relevancia' | 'precio_asc' | 'precio_desc' | 'nuevo';
 
-function foodCategoryIcon(category: string) {
-  const key = category.toLowerCase();
-  if (key.includes('pastel') || key.includes('cake')) return '🍰';
-  if (key.includes('cupcake')) return '🧁';
-  if (key.includes('galleta') || key.includes('cookie')) return '🍪';
-  if (key.includes('bebida') || key.includes('drink')) return '🥤';
-  if (key.includes('promo')) return '🏷️';
-  if (key.includes('individual')) return '🍨';
-  return '🍽️';
-}
-
 export default function Store() {
   const { slug } = useParams();
   const [business, setBusiness] = useState<Business | null>(null);
@@ -425,95 +414,37 @@ export default function Store() {
         </div>
       )}
 
-      {/* Categorías visuales */}
+      {/* Categorías */}
       {categories.length >= 1 && (
         <div className="max-w-3xl mx-auto px-6 pt-6">
           <p className="text-xs text-black/40 mb-2 font-medium">Explora por categoría</p>
-          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
+          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
             <button
               onClick={() => setActiveCategory(null)}
-              className={
-                engine.key === 'food'
-                  ? 'shrink-0 flex flex-col items-center gap-1.5 w-16'
-                  : 'shrink-0 flex flex-col items-center justify-center w-20 h-20 rounded-2xl border text-xs font-medium'
-              }
+              className="shrink-0 px-4 py-2 rounded-full text-xs font-medium border"
               style={
-                engine.key === 'food'
-                  ? undefined
-                  : !activeCategory
+                !activeCategory
                   ? { backgroundColor: accent, color: 'white', borderColor: accent }
                   : { color: 'rgba(0,0,0,0.6)', borderColor: 'rgba(0,0,0,0.1)', backgroundColor: 'white' }
               }
             >
-              {engine.key === 'food' ? (
-                <>
-                  <span
-                    className="w-14 h-14 rounded-full flex items-center justify-center text-xl"
-                    style={
-                      !activeCategory
-                        ? { backgroundColor: accent, color: 'white' }
-                        : { backgroundColor: 'white', color: 'rgba(0,0,0,0.6)', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }
-                    }
-                  >
-                    🍽️
-                  </span>
-                  <span className="text-[11px] text-black/60 font-medium">Todo</span>
-                </>
-              ) : (
-                <>
-                  <span className="text-lg">🗂️</span>
-                  Todo
-                </>
-              )}
+              Todo
             </button>
             {categories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className={
-                  engine.key === 'food'
-                    ? 'shrink-0 flex flex-col items-center gap-1.5 w-16'
-                    : 'shrink-0 flex flex-col items-center justify-center w-20 h-20 rounded-2xl border text-xs font-medium px-1 text-center'
-                }
+                className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-medium border"
                 style={
-                  engine.key === 'food'
-                    ? undefined
-                    : activeCategory === cat
+                  activeCategory === cat
                     ? { backgroundColor: accent, color: 'white', borderColor: accent }
                     : { color: 'rgba(0,0,0,0.6)', borderColor: 'rgba(0,0,0,0.1)', backgroundColor: 'white' }
                 }
               >
-                {engine.key === 'food' ? (
-                  <>
-                    <span
-                      className="w-14 h-14 rounded-full flex items-center justify-center text-xl overflow-hidden"
-                      style={
-                        activeCategory === cat
-                          ? { backgroundColor: accent, color: 'white' }
-                          : { backgroundColor: 'white', color: 'rgba(0,0,0,0.6)', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }
-                      }
-                    >
-                      {customCategoryIcon(cat) ? (
-                        <img src={customCategoryIcon(cat)} alt={cat} className="w-full h-full object-cover" />
-                      ) : (
-                        foodCategoryIcon(cat)
-                      )}
-                    </span>
-                    <span className="text-[11px] text-black/60 font-medium truncate w-full text-center">{cat}</span>
-                  </>
-                ) : (
-                  <>
-                    {customCategoryIcon(cat) ? (
-                      <img src={customCategoryIcon(cat)} alt={cat} className="w-8 h-8 rounded-full object-cover" />
-                    ) : (
-                      <span className="text-lg">🏷️</span>
-                    )}
-                    <span className="truncate w-full">{cat}</span>
-                    <span className="text-[10px] opacity-70">
-                      {products.filter((p) => p.category === cat).length}
-                    </span>
-                  </>
+                {customCategoryIcon(cat) && (
+                  <img src={customCategoryIcon(cat)} alt="" className="w-4 h-4 rounded-full object-cover" />
                 )}
+                {cat}
               </button>
             ))}
           </div>

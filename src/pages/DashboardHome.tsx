@@ -7,6 +7,7 @@ import DashboardNav from '../components/DashboardNav';
 import { Product, Order, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '../types';
 import { getPlanFeatures } from '../config/plans';
 import { playNotificationSound, requestNotificationPermission, showBrowserNotification } from '../utils/notifications';
+import ShareStoreCard from '../components/ShareStoreCard';
 
 export default function DashboardHome() {
   const { business, logout, loading: authLoading } = useAuth();
@@ -140,6 +141,8 @@ export default function DashboardHome() {
           </div>
         </div>
 
+        <ShareStoreCard storeSlug={business.slug} businessName={business.name} />
+
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
           <MetricCard label="Pedidos nuevos" value={newOrders} accent="text-amber-600" />
           <MetricCard label="Ventas completadas" value={`$${completedSales}`} accent="text-bizly-green" />
@@ -170,6 +173,22 @@ export default function DashboardHome() {
             <p className="text-sm font-medium mt-2">Personalizar tienda</p>
           </Link>
         </div>
+
+        <Link
+          to="/dashboard/notas-venta"
+          className="flex items-center justify-between gap-4 bg-bizly-dark text-white rounded-xl p-5 mb-8 hover:opacity-90 transition"
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">📝</span>
+            <div>
+              <p className="font-semibold text-sm">Hoja de notas de ventas</p>
+              <p className="text-xs text-white/60">
+                Imprime una hoja con tu logo para llevar el registro manual de tus ventas del día.
+              </p>
+            </div>
+          </div>
+          <span className="text-white/60 shrink-0">→</span>
+        </Link>
 
         <div className="bg-white rounded-xl shadow-sm p-5">
           <div className="flex items-center justify-between mb-4">

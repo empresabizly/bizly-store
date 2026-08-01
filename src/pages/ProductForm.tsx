@@ -7,6 +7,7 @@ import { Product, ProductBadge, PRODUCT_BADGE_LABELS, Category } from '../types'
 import ProductImageUploader from '../components/ProductImageUploader';
 import { CloudinaryUploadResult } from '../cloudinary/upload';
 import { deleteCloudinaryImage } from '../cloudinary/deleteImage';
+import QuickCouponForm from '../components/QuickCouponForm';
 
 export default function ProductForm() {
   const { business } = useAuth();
@@ -272,6 +273,12 @@ export default function ProductForm() {
             {loading ? 'Guardando...' : 'Guardar producto'}
           </button>
         </form>
+
+        {business && (
+          <div className="mt-6">
+            <QuickCouponForm businessId={business.id} />
+          </div>
+        )}
       </div>
     </div>
   );
